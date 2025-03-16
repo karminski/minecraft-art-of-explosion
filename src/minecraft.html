@@ -68,7 +68,7 @@
             grass: 1,
             dirt: 2,
             stone: 3,
-            wood: 4,
+            tree: 4,
             leaves: 5
         };
 
@@ -78,7 +78,7 @@
             grass: textureLoader.load('assets/images/grass.png'),
             dirt: textureLoader.load('assets/images/dirt.png'),
             stone: textureLoader.load('assets/images/stone.png'),
-            wood: textureLoader.load('assets/images/wood.png'),
+            tree: textureLoader.load('assets/images/tree.png'),
             leaves: textureLoader.load('assets/images/leaves.png')
         };
 
@@ -87,12 +87,12 @@
             grass: new THREE.MeshPhongMaterial({ map: textures.grass, color: 0x7cba34 }),
             dirt: new THREE.MeshPhongMaterial({ map: textures.dirt, color: 0x8b4513 }),
             stone: new THREE.MeshPhongMaterial({ map: textures.stone, color: 0x808080 }),
-            wood: new THREE.MeshPhongMaterial({ map: textures.wood, color: 0x8b4513 }),
+            tree: new THREE.MeshPhongMaterial({ map: textures.tree, color: 0x8b4513 }),
             leaves: new THREE.MeshPhongMaterial({ map: textures.leaves, color: 0x32cd32, transparent: true, opacity: 0.8 })
         };
 
         // 世界大小
-        const worldSize = 25;
+        const worldSize = 50;
 
         // 创建方块
         function createBlock(x, y, z, type) {
@@ -141,7 +141,7 @@
             const height = Math.floor(Math.random() * 3) + 4;
             // 树干
             for (let y = 1; y < height; y++) {
-                world[x][y][z] = blockTypes.wood;
+                world[x][y][z] = blockTypes.tree;
             }
             // 树冠
             const crownSize = Math.floor(Math.random() * 2) + 2;
