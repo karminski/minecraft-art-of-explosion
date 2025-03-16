@@ -26,6 +26,20 @@
             font-size: 16px;
             border-radius: 5px;
         }
+
+        /* 新增调试面板样式 */
+        #debug-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #00ff00;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            border-radius: 5px;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -39,6 +53,18 @@
         右键 - 放方块<br>
         按M锁定鼠标
     </div>
+    <!-- 新增调试面板 -->
+    <div id="debug-panel">
+        Camera Position:<br>
+        X: 0.00<br>
+        Y: 0.00<br>
+        Z: 0.00<br>
+        Look Direction:<br>
+        X: 0.00<br>
+        Y: 0.00<br>
+        Z: 0.00
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script>
         // 初始化场景、相机和渲染器
@@ -249,16 +275,24 @@
 
         document.addEventListener('mousemove', (event) => {
             if (mouseLock) {
-                // 计算鼠标移动的水平和垂直偏移量
-                const moveX = event.movementX;
-                const moveY = event.movementY;
+                const deltaX = event.movementX;
+                const deltaY = event.movementY;
 
-                // 更新玩家的水平旋转角度（Yaw），使用负号来反转方向
-                player.rotation.y -= moveX * 0.002;
+                // 修改后的旋转计算
+                player.rotation.y -= deltaX * 0.002;
+                // 将角度限制在 -π 到 π 之间
+                player.rotation.y = ((player.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
 
-                // 更新玩家的垂直旋转角度（Pitch），使用负号来反转方向
-                player.rotation.x -= moveY * 0.002;
-                player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, player.rotation.x));
+                player.rotation.x -= deltaY * 0.002;
+                player.rotation.x = THREE.MathUtils.clamp(player.rotation.x, -Math.PI/2, Math.PI/2);
+
+                // 使用四元数直接累积旋转
+                const deltaQuaternion = new THREE.Quaternion()
+                    .setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaX * 0.002) // Y轴旋转
+                    .multiply(
+                        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaY * 0.002) // X轴旋转
+                    );
+                camera.quaternion.multiply(deltaQuaternion).normalize();
             }
         });
 
@@ -317,13 +351,18 @@
             player.position.y += player.velocity.y;
             player.position.z += player.velocity.z;
 
-            // 更新相机的位置
-            camera.position.copy(player.position);
+            // 使用四元数更新相机方向
+            const quaternion = new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(
+                    player.rotation.x,
+                    player.rotation.y,
+                    0,
+                    'YXZ' // 保持旋转顺序一致
+                ));
+            camera.quaternion.copy(quaternion);
             
-            // 使用欧拉角设置相机旋转，明确指定旋转顺序为"YXZ"
-            // 这意味着先绕Y轴旋转(左右看)，再绕X轴旋转(上下看)，避免Z轴滚转
-            camera.rotation.order = "YXZ";
-            camera.rotation.set(player.rotation.x, player.rotation.y, 0);
+            // 更新相机位置保持不变
+            camera.position.copy(player.position);
         }
 
         // 挖方块
@@ -373,6 +412,22 @@
             requestAnimationFrame(animate);
 
             updateCamera();
+
+            // 获取相机朝向向量
+            const lookDirection = new THREE.Vector3();
+            camera.getWorldDirection(lookDirection);
+
+            // 更新调试面板
+            const debugPanel = document.getElementById('debug-panel');
+            debugPanel.innerHTML = 
+                `Camera Position:<br>` +
+                `X: ${camera.position.x.toFixed(2)}<br>` +
+                `Y: ${camera.position.y.toFixed(2)}<br>` +
+                `Z: ${camera.position.z.toFixed(2)}<br>` +
+                `Look Direction:<br>` +
+                `X: ${lookDirection.x.toFixed(2)}<br>` +
+                `Y: ${lookDirection.y.toFixed(2)}<br>` +
+                `Z: ${lookDirection.z.toFixed(2)}`;
 
             if (isMouseDown) {
                 breakBlock();
