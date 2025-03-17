@@ -253,10 +253,72 @@
             return explosion;
         }
 
-        // 修改createBlock函数以处理TNT的特殊贴图
+        // 添加一个数组来存储爆炸碎片
+        const explosionDebris = [];
+
+        // 添加新函数：为销毁的方块创建爆炸碎片
+        function createBlockDebris(x, y, z, blockType) {
+            // 确定方块的材质
+            let material;
+            if (blockType === blockTypes.tnt) {
+                // TNT使用多材质，我们只用第一个面的材质来简化
+                material = materials.tnt;
+            } else {
+                material = materials[Object.keys(blockTypes).find(key => blockTypes[key] === blockType)];
+            }
+
+            // 为每个方块创建2到4个碎片，增加数量让效果更明显
+            const debrisCount = Math.floor(Math.random() * 3) + 2;
+            
+            for (let i = 0; i < debrisCount; i++) {
+                // 创建一个小一点的几何体作为碎片
+                const size = 0.2 + Math.random() * 0.4; // 0.2-0.6之间的随机大小
+                const geometry = new THREE.BoxGeometry(size, size, size);
+                const debris = new THREE.Mesh(geometry, material);
+                
+                // 设置碎片的初始位置（方块中心位置附近）
+                debris.position.set(
+                    x + 0.5 + (Math.random() - 0.5) * 0.3,
+                    y + 0.5 + (Math.random() - 0.5) * 0.3,
+                    z + 0.5 + (Math.random() - 0.5) * 0.3
+                );
+                
+                // 设置随机的初始速度（从爆炸中心向外飞）
+                const direction = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,
+                    Math.random() * 2 + 0.5, // 更大的向上初始速度
+                    (Math.random() - 0.5) * 2
+                ).normalize();
+                
+                // 速度大小随机，但与到爆炸中心的距离成反比
+                // 增加10倍速度
+                const speed = (0.05 + Math.random() * 0.1) * 10;
+                
+                // 随机旋转速度, 也变快10倍左右
+                const rotationSpeed = {
+                    x: (Math.random() - 0.5) * 2.0,
+                    y: (Math.random() - 0.5) * 2.0,
+                    z: (Math.random() - 0.5) * 2.0
+                };
+                
+                // 将碎片添加到场景中
+                scene.add(debris);
+                
+                // 将碎片信息添加到数组中以便更新
+                explosionDebris.push({
+                    mesh: debris,
+                    velocity: direction.multiplyScalar(speed),
+                    rotationSpeed: rotationSpeed,
+                    lifeTime: 120 + Math.floor(Math.random() * 60), // 存在时间更长: 120-180帧
+                    currentLife: 0,
+                    gravity: 0.004 // 稍微降低重力，让碎片飞得更远
+                });
+            }
+        }
+
+        // 修改createBlock函数以确保TNT正确激活
         function createBlock(x, y, z, type) {
             const geometry = new THREE.BoxGeometry(1, 1, 1);
-            let material;
             if (type === blockTypes.tnt) {
                 // 创建TNT的六面材质
                 const materials = [
@@ -280,8 +342,10 @@
                 // 保存引用到数组
                 blockReferences.push(tntMesh);
                 
-                // 激活TNT
-                startTNTTimer(tntMesh);
+                // 激活TNT (如果是通过放置操作创建的)
+                if (inventory.selectedIndex === 1) {
+                    startTNTTimer(tntMesh);
+                }
                 
                 return tntMesh;
             } else {
@@ -735,7 +799,11 @@
 
                             world[x][y][z] = blockTypeToPlace;
                             createBlock(x, y, z, blockTypeToPlace);
-                            inventory.items[inventory.selectedIndex].count -= 1;
+                            
+                            // 减少物品数量并确保不会低于0
+                            inventory.items[inventory.selectedIndex].count = Math.max(0, inventory.items[inventory.selectedIndex].count - 1);
+                            
+                            // 立即更新UI
                             updateInventoryUI();
                         }
                     }
@@ -817,24 +885,30 @@
         function updateInventoryUI() {
             const slots = document.querySelectorAll('.inventory-slot');
             slots.forEach((slot, index) => {
+                // 更新选中状态
                 slot.classList.remove('selected');
                 if (index === inventory.selectedIndex) {
                     slot.classList.add('selected');
                 }
 
-                // 更新数量显示
+                // 清除旧的计数元素
                 const countElements = slot.getElementsByClassName('item-count');
-                if (countElements.length > 0) {
+                while (countElements.length > 0) {
                     slot.removeChild(countElements[0]);
                 }
 
-                if (inventory.items[index].count > 0) {
+                // 添加新的计数显示
+                const count = inventory.items[index].count;
+                if (count > 0) {
                     const countElement = document.createElement('div');
                     countElement.className = 'item-count';
-                    countElement.textContent = `x${inventory.items[index].count}`;
+                    countElement.textContent = `x${count}`;
                     slot.appendChild(countElement);
                 }
             });
+            
+            // 调试信息
+            console.log("物品栏已更新:", inventory.items.map(item => item.count));
         }
 
         // 使用更高效的 FPS 计算方法
@@ -854,26 +928,26 @@
 
         // 修改explodeTNT函数，调整爆炸大小并为每个销毁的方块添加爆炸效果
         function explodeTNT(x, y, z) {
-            // 创建主爆炸动画，大小调整为原来的50%-100%
+            // 创建主爆炸动画，大小增加
             const mainExplosionPos = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
-            const mainExplosionSize = 2.0 + Math.random() * 2.0; // 主爆炸大小为2.0-4.0之间随机值
+            const mainExplosionSize = 3.0 + Math.random() * 3.0; // 增大到3.0-6.0之间随机值
             createExplosionAnimation(mainExplosionPos, mainExplosionSize);
             
-            // 创建额外的爆炸效果，调整为较少数量减轻性能压力
-            for (let i = 0; i < 3; i++) {
+            // 创建额外的爆炸效果，增加数量
+            for (let i = 0; i < 5; i++) { // 从3个增加到5个
                 // 在主爆炸点附近随机位置创建额外爆炸
                 const offset = new THREE.Vector3(
-                    (Math.random() - 0.5) * 2, 
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2
+                    (Math.random() - 0.5) * 4, // 范围扩大
+                    (Math.random() - 0.5) * 4,
+                    (Math.random() - 0.5) * 4
                 );
                 
                 const extraExplosionPos = new THREE.Vector3().addVectors(mainExplosionPos, offset);
-                // 随机爆炸大小和延迟，减小范围
-                const scale = 1.0 + Math.random() * 1.0; // 1.0-2.0之间
+                // 随机爆炸大小和延迟，增加范围
+                const scale = 1.5 + Math.random() * 1.5; // 1.5-3.0之间
                 setTimeout(() => {
                     createExplosionAnimation(extraExplosionPos, scale);
-                }, Math.random() * 200); // 减少最大延迟
+                }, Math.random() * 200); // 延迟相同
             }
             
             // 从TNT发出射线检测
@@ -882,10 +956,10 @@
             // 记录已经被销毁的方块位置，避免重复创建爆炸动画
             const destroyedBlocks = new Set();
             
-            // 遍历爆炸范围内的所有方块
-            for (let dx = -2; dx <= 2; dx++) {
-                for (let dy = -2; dy <= 2; dy++) {
-                    for (let dz = -2; dz <= 2; dz++) {
+            // 遍历爆炸范围内的所有方块 - 稍微增加爆炸范围
+            for (let dx = -3; dx <= 3; dx++) { // 从2增加到3
+                for (let dy = -3; dy <= 3; dy++) {
+                    for (let dz = -3; dz <= 3; dz++) {
                         const blockX = x + dx;
                         const blockY = y + dy;
                         const blockZ = z + dz;
@@ -936,8 +1010,9 @@
                                 
                                 // 如果没有被石头阻挡，则移除方块
                                 if (!blocked) {
-                                    // 移除方块前为其创建爆炸动画
-                                    createBlockExplosion(blockX, blockY, blockZ);
+                                    // 创建方块碎片（新增）
+                                    const blockType = world[blockX][blockY][blockZ];
+                                    createBlockDebris(blockX, blockY, blockZ, blockType);
                                     
                                     // 记录已销毁方块位置
                                     destroyedBlocks.add(`${blockX},${blockY},${blockZ}`);
@@ -959,31 +1034,19 @@
             }
         }
 
-        // 添加新函数：为销毁的方块创建爆炸动画
-        function createBlockExplosion(x, y, z) {
-            // 为被销毁的方块创建较小的爆炸效果
-            const blockPosition = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
-            
-            // 随机大小，范围在0.5-1.0之间
-            const explosionSize = 0.5 + Math.random() * 0.5;
-            
-            // 随机延迟，让爆炸看起来更自然
-            setTimeout(() => {
-                createExplosionAnimation(blockPosition, explosionSize);
-            }, Math.random() * 150);
-        }
-
-        // 修改startTNTTimer函数，调整爆炸逻辑
+        // 修正startTNTTimer函数确保定时器正确工作
         function startTNTTimer(block) {
+            console.log("TNT激活！");
+            
             // 保存原始材质（数组）
-            block.originalMaterials = block.material;
+            block.originalMaterials = block.material.map(mat => mat.clone());
             
             // 创建高亮材质数组
             const highlightMaterials = block.material.map(mat => {
                 const highlightMat = mat.clone();
                 if (highlightMat.emissive) {
-                    highlightMat.emissive.set(0xffff00);
-                    highlightMat.emissiveIntensity = 0.3;
+                    highlightMat.emissive.set(0xff0000); // 改为红色更醒目
+                    highlightMat.emissiveIntensity = 0.5; // 提高亮度
                 }
                 return highlightMat;
             });
@@ -1000,29 +1063,37 @@
             }, 200);
 
             // 倒计时3秒后爆炸
-            setTimeout(() => {
+            const explodeTimeout = setTimeout(() => {
+                console.log("TNT爆炸！");
                 clearInterval(highlightInterval);
-                // 将爆炸逻辑放在TNT移除之前，这样爆炸位置会更精确
+                
+                // 爆炸之前将其移除
+                world[block.blockX][block.blockY][block.blockZ] = blockTypes.air;
+                
+                // 执行爆炸效果
                 explodeTNT(block.blockX, block.blockY, block.blockZ);
                 
-                // 短暂延迟后再移除TNT方块，让爆炸效果看起来更真实
-                setTimeout(() => {
-                    world[block.blockX][block.blockY][block.blockZ] = blockTypes.air;
-                    scene.remove(block);
-                    const index = blockReferences.indexOf(block);
-                    if (index > -1) {
-                        blockReferences.splice(index, 1);
-                    }
+                // 从场景中移除TNT方块
+                scene.remove(block);
+                const index = blockReferences.indexOf(block);
+                if (index > -1) {
+                    blockReferences.splice(index, 1);
+                }
+                
+                // 清理定时器引用
+                if (tntTimers[block.uuid]) {
                     delete tntTimers[block.uuid];
-                }, 100);
+                }
             }, 3000);
 
+            // 存储定时器引用以便清理
             tntTimers[block.uuid] = {
                 highlightInterval: highlightInterval,
-                explodeTimeout: setTimeout(() => { }, 3000) // 占位
+                explodeTimeout: explodeTimeout
             };
         }
 
+        // 添加爆炸碎片的更新逻辑到animate函数中
         function animate(currentTime) {
             requestAnimationFrame(animate);
 
@@ -1064,6 +1135,34 @@
 
             if (isRightMouseDown) {
                 placeBlockWithDebounce();
+            }
+
+            // 更新爆炸碎片
+            for (let i = explosionDebris.length - 1; i >= 0; i--) {
+                const debris = explosionDebris[i];
+                
+                // 应用重力
+                debris.velocity.y -= debris.gravity;
+                
+                // 更新位置
+                debris.mesh.position.x += debris.velocity.x;
+                debris.mesh.position.y += debris.velocity.y;
+                debris.mesh.position.z += debris.velocity.z;
+                
+                // 更新旋转
+                debris.mesh.rotation.x += debris.rotationSpeed.x;
+                debris.mesh.rotation.y += debris.rotationSpeed.y;
+                debris.mesh.rotation.z += debris.rotationSpeed.z;
+                
+                // 增加生命计数
+                debris.currentLife++;
+                
+                // 如果碎片触地或者寿命结束，移除它
+                if (debris.currentLife >= debris.lifeTime || debris.mesh.position.y < 0) {
+                    scene.remove(debris.mesh);
+                    debris.mesh.geometry.dispose();
+                    explosionDebris.splice(i, 1);
+                }
             }
 
             renderer.render(scene, camera);
