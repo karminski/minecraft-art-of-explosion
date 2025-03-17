@@ -27,11 +27,11 @@
             border-radius: 5px;
         }
 
-        /* 新增调试面板样式 */
         #debug-panel {
             position: absolute;
             top: 10px;
             right: 10px;
+            min-width: 160px;
             color: #00ff00;
             background-color: rgba(0, 0, 0, 0.7);
             padding: 10px;
@@ -39,6 +39,39 @@
             font-size: 14px;
             border-radius: 5px;
             pointer-events: none;
+        }
+
+        #inventory {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .inventory-slot {
+            width: 64px;
+            height: 64px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .inventory-slot.selected {
+            background-color: rgba(255, 255, 0, 0.3);
+            transform: scale(1.3);
+        }
+
+        .inventory-item {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -51,10 +84,12 @@
         空格 - 跳跃<br>
         左键 - 挖方块<br>
         右键 - 放方块<br>
-        按M锁定鼠标
+        按M锁定鼠标<br>
+        1-5 - 切换道具
     </div>
-    <!-- 新增调试面板 -->
     <div id="debug-panel">
+        FPS: 0<br>
+        Frame Time: 0.00ms<br>
         Camera Position:<br>
         X: 0.00<br>
         Y: 0.00<br>
@@ -64,6 +99,7 @@
         Y: 0.00<br>
         Z: 0.00
     </div>
+    <div id="inventory"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
     <script>
@@ -301,7 +337,7 @@
                 player.rotation.y = ((player.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
 
                 player.rotation.x -= deltaY * 0.002;
-                player.rotation.x = THREE.MathUtils.clamp(player.rotation.x, -Math.PI/2, Math.PI/2);
+                player.rotation.x = THREE.MathUtils.clamp(player.rotation.x, -Math.PI / 2, Math.PI / 2);
 
                 // 使用四元数直接累积旋转
                 const deltaQuaternion = new THREE.Quaternion()
@@ -377,7 +413,7 @@
                     'YXZ' // 保持旋转顺序一致
                 ));
             camera.quaternion.copy(quaternion);
-            
+
             // 更新相机位置保持不变
             camera.position.copy(player.position);
         }
@@ -424,9 +460,79 @@
             }
         }
 
-        // 渲染循环
-        function animate() {
+        // 道具栏功能
+        const inventory = {
+            items: [
+                { name: 'pickaxe', texture: 'assets/images/pickaxe.png' },
+                { name: 'tnt', texture: 'assets/images/tnt-side.jpg' },
+                { name: 'empty', texture: '' },
+                { name: 'empty', texture: '' },
+                { name: 'empty', texture: '' }
+            ],
+            selectedIndex: 0
+        };
+
+        // 创建道具栏
+        function createInventoryUI() {
+            const inventoryElement = document.getElementById('inventory');
+            inventoryElement.innerHTML = '';
+
+            inventory.items.forEach((item, index) => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'inventory-slot';
+                if (index === inventory.selectedIndex) {
+                    slotElement.classList.add('selected');
+                }
+
+                if (item.texture) {
+                    const itemElement = document.createElement('img');
+                    itemElement.src = item.texture;
+                    itemElement.className = 'inventory-item';
+                    slotElement.appendChild(itemElement);
+                }
+
+                slotElement.addEventListener('click', () => {
+                    inventory.selectedIndex = index;
+                    updateInventoryUI();
+                });
+
+                inventoryElement.appendChild(slotElement);
+            });
+        }
+
+        // 更新道具栏UI
+        function updateInventoryUI() {
+            const slots = document.querySelectorAll('.inventory-slot');
+            slots.forEach((slot, index) => {
+                slot.classList.remove('selected');
+                if (index === inventory.selectedIndex) {
+                    slot.classList.add('selected');
+                }
+            });
+        }
+
+        // 键盘切换道具
+        document.addEventListener('keydown', (event) => {
+            if (event.key >= '1' && event.key <= '5') {
+                const index = parseInt(event.key) - 1;
+                if (index >= 0 && index < inventory.items.length) {
+                    inventory.selectedIndex = index;
+                    updateInventoryUI();
+                }
+            }
+        });
+
+        // 使用更高效的 FPS 计算方法
+        let lastFrameTime = performance.now();
+        let frameTime = 0;
+
+        function animate(currentTime) {
             requestAnimationFrame(animate);
+            
+            // 计算帧时间和 FPS
+            frameTime = currentTime - lastFrameTime;
+            const fps = Math.round(1000 / frameTime);
+            lastFrameTime = currentTime;
 
             updateCamera();
 
@@ -436,7 +542,9 @@
 
             // 更新调试面板
             const debugPanel = document.getElementById('debug-panel');
-            debugPanel.innerHTML = 
+            debugPanel.innerHTML =
+                `FPS: ${fps}<br>` +
+                `Frame Time: ${frameTime.toFixed(2)}ms<br>` +
                 `Camera Position:<br>` +
                 `X: ${camera.position.x.toFixed(2)}<br>` +
                 `Y: ${camera.position.y.toFixed(2)}<br>` +
@@ -463,6 +571,9 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // 初始化道具栏
+        createInventoryUI();
 
         // 开始动画循环
         animate();
