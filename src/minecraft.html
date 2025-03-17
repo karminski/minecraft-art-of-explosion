@@ -213,6 +213,46 @@
         // 添加这一行在 TNT 相关函数之前（可放在 world 数组定义之后）
         const tntTimers = {};
 
+        // 预加载爆炸动画序列帧
+        const explosionTextures = [];
+        for (let i = 1; i <= 12; i++) {
+            const textureNum = i.toString().padStart(2, '0');
+            explosionTextures.push(textureLoader.load(`assets/images/explode-${textureNum}.png`));
+        }
+
+        // 创建爆炸动画
+        function createExplosionAnimation(position, scale = 1) {
+            const explosionMaterial = new THREE.SpriteMaterial({
+                map: explosionTextures[0],
+                transparent: true,
+                blending: THREE.AdditiveBlending // 使爆炸效果更明亮
+            });
+            
+            const explosion = new THREE.Sprite(explosionMaterial);
+            explosion.position.copy(position);
+            explosion.scale.set(scale, scale, 1);
+            scene.add(explosion);
+            
+            // 帧索引和时间控制
+            let frameIndex = 0;
+            const frameTime = 60; // 每帧持续时间(毫秒)
+            
+            // 动画间隔
+            const animInterval = setInterval(() => {
+                frameIndex++;
+                if (frameIndex < explosionTextures.length) {
+                    explosion.material.map = explosionTextures[frameIndex];
+                } else {
+                    // 动画结束，清理
+                    clearInterval(animInterval);
+                    scene.remove(explosion);
+                    explosion.material.dispose();
+                }
+            }, frameTime);
+            
+            return explosion;
+        }
+
         // 修改createBlock函数以处理TNT的特殊贴图
         function createBlock(x, y, z, type) {
             const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -812,10 +852,35 @@
         crosshairCtx.strokeStyle = 'white';
         crosshairCtx.stroke();
 
-        // 改进TNT爆炸函数，增加射线检测和石头阻挡功能
+        // 修改explodeTNT函数，调整爆炸大小并为每个销毁的方块添加爆炸效果
         function explodeTNT(x, y, z) {
+            // 创建主爆炸动画，大小调整为原来的50%-100%
+            const mainExplosionPos = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
+            const mainExplosionSize = 2.0 + Math.random() * 2.0; // 主爆炸大小为2.0-4.0之间随机值
+            createExplosionAnimation(mainExplosionPos, mainExplosionSize);
+            
+            // 创建额外的爆炸效果，调整为较少数量减轻性能压力
+            for (let i = 0; i < 3; i++) {
+                // 在主爆炸点附近随机位置创建额外爆炸
+                const offset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2, 
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 2
+                );
+                
+                const extraExplosionPos = new THREE.Vector3().addVectors(mainExplosionPos, offset);
+                // 随机爆炸大小和延迟，减小范围
+                const scale = 1.0 + Math.random() * 1.0; // 1.0-2.0之间
+                setTimeout(() => {
+                    createExplosionAnimation(extraExplosionPos, scale);
+                }, Math.random() * 200); // 减少最大延迟
+            }
+            
             // 从TNT发出射线检测
             const tntPosition = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
+            
+            // 记录已经被销毁的方块位置，避免重复创建爆炸动画
+            const destroyedBlocks = new Set();
             
             // 遍历爆炸范围内的所有方块
             for (let dx = -2; dx <= 2; dx++) {
@@ -871,6 +936,12 @@
                                 
                                 // 如果没有被石头阻挡，则移除方块
                                 if (!blocked) {
+                                    // 移除方块前为其创建爆炸动画
+                                    createBlockExplosion(blockX, blockY, blockZ);
+                                    
+                                    // 记录已销毁方块位置
+                                    destroyedBlocks.add(`${blockX},${blockY},${blockZ}`);
+                                    
                                     world[blockX][blockY][blockZ] = blockTypes.air;
                                     // 移除对应的方块对象
                                     const blockIndex = blockReferences.findIndex(block =>
@@ -888,7 +959,21 @@
             }
         }
 
-        // 改进TNT计时器和闪烁效果
+        // 添加新函数：为销毁的方块创建爆炸动画
+        function createBlockExplosion(x, y, z) {
+            // 为被销毁的方块创建较小的爆炸效果
+            const blockPosition = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
+            
+            // 随机大小，范围在0.5-1.0之间
+            const explosionSize = 0.5 + Math.random() * 0.5;
+            
+            // 随机延迟，让爆炸看起来更自然
+            setTimeout(() => {
+                createExplosionAnimation(blockPosition, explosionSize);
+            }, Math.random() * 150);
+        }
+
+        // 修改startTNTTimer函数，调整爆炸逻辑
         function startTNTTimer(block) {
             // 保存原始材质（数组）
             block.originalMaterials = block.material;
@@ -917,14 +1002,19 @@
             // 倒计时3秒后爆炸
             setTimeout(() => {
                 clearInterval(highlightInterval);
+                // 将爆炸逻辑放在TNT移除之前，这样爆炸位置会更精确
                 explodeTNT(block.blockX, block.blockY, block.blockZ);
-                world[block.blockX][block.blockY][block.blockZ] = blockTypes.air;
-                scene.remove(block);
-                const index = blockReferences.indexOf(block);
-                if (index > -1) {
-                    blockReferences.splice(index, 1);
-                }
-                delete tntTimers[block.uuid];
+                
+                // 短暂延迟后再移除TNT方块，让爆炸效果看起来更真实
+                setTimeout(() => {
+                    world[block.blockX][block.blockY][block.blockZ] = blockTypes.air;
+                    scene.remove(block);
+                    const index = blockReferences.indexOf(block);
+                    if (index > -1) {
+                        blockReferences.splice(index, 1);
+                    }
+                    delete tntTimers[block.uuid];
+                }, 100);
             }, 3000);
 
             tntTimers[block.uuid] = {
