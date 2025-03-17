@@ -444,7 +444,7 @@
             camera.position.copy(player.position);
         }
 
-        // 简化的高亮效果函数
+        // 高亮效果函数 - 仅使用发光，不放大方块
         function highlightBlock() {
             // 先重置所有方块
             blockReferences.forEach(block => {
@@ -463,16 +463,17 @@
                 
                 // 保存原始材质
                 if (!block.originalMaterial) {
-                    block.originalMaterial = block.material;
+                    block.originalMaterial = block.material.clone();
                 }
                 
-                // 创建高亮材质 - 使用黄色线框，更符合游戏风格
-                const highlightMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xffff00,
-                    wireframe: true,
-                    transparent: true,
-                    opacity: 0.8
-                });
+                // 创建新的高亮材质 - 基于原始材质但添加发光效果
+                const highlightMaterial = block.originalMaterial.clone();
+                
+                // 添加发光效果（仅对MeshPhongMaterial和MeshStandardMaterial有效）
+                if (highlightMaterial.emissive) {
+                    highlightMaterial.emissive.set(0xffff00); // 黄色发光
+                    highlightMaterial.emissiveIntensity = 0.1; // 降低发光强度为0.1
+                }
                 
                 // 应用高亮材质
                 block.material = highlightMaterial;
