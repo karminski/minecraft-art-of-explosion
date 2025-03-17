@@ -442,14 +442,42 @@
             }
         }
 
+        // 添加在scene声明后面
+        const characterGroup = new THREE.Group(); // 用于包含所有角色部分
+        scene.add(characterGroup);
+        let character; // 全局变量，用于存储角色对象
+        
+
+        // 修改初始化角色位置逻辑
+        // 在生成地形之后，初始化玩家之前添加这个函数
+        function findSafeSpawnPosition() {
+            const spawnX = 5;
+            const spawnZ = 5;
+            
+            // 找到该坐标上最高的非空气方块
+            let highestY = 0;
+            for (let y = worldSize - 1; y >= 0; y--) {
+                if (world[spawnX][y][spawnZ] !== blockTypes.air) {
+                    highestY = y + 1; // 站在方块上方
+                    break;
+                }
+            }
+            
+            // 确保至少有1格高度安全位置
+            highestY = Math.max(highestY, 1);
+            
+            console.log(`安全生成点: (${spawnX}, ${highestY}, ${spawnZ})`);
+            return new THREE.Vector3(spawnX + 0.5, highestY + 0.5, spawnZ + 0.5);
+        }
+
         // 初始化世界
         generateTerrain();
         generateTrees();
         renderWorld();
 
-        // 玩家控制
+        // 玩家控制 - 修改这里，使用安全位置初始化
         const player = {
-            position: new THREE.Vector3(5, 2, 5),
+            position: findSafeSpawnPosition(),
             rotation: new THREE.Vector2(0, 0),
             speed: 0.1,
             jumpSpeed: 0.3,
@@ -457,6 +485,89 @@
             gravity: 0.005,
             velocity: new THREE.Vector3(0, 0, 0)
         };
+
+        // 添加角色动画参数
+        const characterAnimation = {
+            animationTime: 0,
+            walkingSpeed: 0.15,
+            maxSwingAngle: Math.PI / 4, // 最大摆动角度(45度)
+            isWalking: false,
+            lastPosition: new THREE.Vector3()
+        };
+
+        // 创建角色
+        character = createCharacter();
+
+        // 创建角色模型
+        function createCharacter() {
+            const character = {
+                group: characterGroup,
+                head: null,
+                body: null,
+                leftArm: null,
+                rightArm: null,
+                leftLeg: null,
+                rightLeg: null
+            };
+
+            // 创建材质
+            const skinTexture = textureLoader.load('assets/images/steve.png');
+            const skinMaterial = new THREE.MeshPhongMaterial({ 
+                map: skinTexture, 
+                color: 0xffffff 
+            });
+
+            // 创建头部 (1x1x1)
+            const headGeometry = new THREE.BoxGeometry(1, 1, 1);
+            const head = new THREE.Mesh(headGeometry, skinMaterial.clone());
+            head.position.set(0, 2.5, 0); // 头顶位置
+            character.head = head;
+            character.group.add(head);
+
+            // 创建躯干 (1x1.5x0.5)
+            const bodyGeometry = new THREE.BoxGeometry(1, 1.5, 0.5);
+            const body = new THREE.Mesh(bodyGeometry, skinMaterial.clone());
+            body.position.set(0, 1.25, 0); // 躯干位置
+            character.body = body;
+            character.group.add(body);
+
+            // 创建左手臂 (0.5x1.5x0.5)
+            const leftArmGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+            leftArmGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
+            const leftArm = new THREE.Mesh(leftArmGeometry, skinMaterial.clone());
+            leftArm.position.set(-0.75, 2, 0); // 调整位置，使顶部对齐身体上部
+            character.leftArm = leftArm;
+            character.group.add(leftArm);
+
+            // 创建右手臂 (0.5x1.5x0.5)
+            const rightArmGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+            rightArmGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
+            const rightArm = new THREE.Mesh(rightArmGeometry, skinMaterial.clone());
+            rightArm.position.set(0.75, 2, 0); // 调整位置，使顶部对齐身体上部
+            character.rightArm = rightArm;
+            character.group.add(rightArm);
+
+            // 创建左腿 (0.5x1.5x0.5)
+            const leftLegGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+            leftLegGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
+            const leftLeg = new THREE.Mesh(leftLegGeometry, skinMaterial.clone());
+            leftLeg.position.set(-0.25, 0.75, 0); // 调整位置
+            character.leftLeg = leftLeg;
+            character.group.add(leftLeg);
+
+            // 创建右腿 (0.5x1.5x0.5)
+            const rightLegGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+            rightLegGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
+            const rightLeg = new THREE.Mesh(rightLegGeometry, skinMaterial.clone());
+            rightLeg.position.set(0.25, 0.75, 0); // 调整位置
+            character.rightLeg = rightLeg;
+            character.group.add(rightLeg);
+
+            // 将角色组的位置设置为玩家当前位置
+            character.group.position.copy(player.position);
+            
+            return character;
+        }
 
         // 鼠标控制
         let mouseX = 0;
@@ -542,7 +653,7 @@
             return true;
         }
 
-        // 更新相机位置
+        // 修改updateCamera函数
         function updateCamera() {
             // 重力
             if (!checkCollision(player.position, new THREE.Vector3(0, -1, 0))) {
@@ -585,6 +696,12 @@
             player.position.y += player.velocity.y;
             player.position.z += player.velocity.z;
 
+            // 更新角色组位置
+            characterGroup.position.copy(player.position);
+            
+            // 旋转角色与相机相同的方向
+            characterGroup.rotation.y = player.rotation.y;
+
             // 使用四元数更新相机方向
             const quaternion = new THREE.Quaternion()
                 .setFromEuler(new THREE.Euler(
@@ -595,8 +712,64 @@
                 ));
             camera.quaternion.copy(quaternion);
 
-            // 更新相机位置保持不变
-            camera.position.copy(player.position);
+            // 相机位置放在角色头部
+            const headWorldPosition = new THREE.Vector3();
+            if (character && character.head) {
+                // 获取头部在世界坐标系中的位置
+                character.head.getWorldPosition(headWorldPosition);
+                // 将相机放在头部位置
+                camera.position.copy(headWorldPosition);
+            } else {
+                // 如果角色未创建，保持原有逻辑
+                camera.position.copy(player.position);
+            }
+
+            // 检测角色是否在移动
+            const currentPosition = new THREE.Vector3().copy(player.position);
+            const moveDistance = currentPosition.distanceTo(characterAnimation.lastPosition);
+            characterAnimation.isWalking = moveDistance > 0.01;
+            
+            // 更新角色动画
+            updateCharacterAnimation();
+            
+            // 保存当前位置用于下一帧检测
+            characterAnimation.lastPosition.copy(currentPosition);
+        }
+
+        // 实现角色动画函数
+        function updateCharacterAnimation() {
+            if (!character) return;
+            
+            if (characterAnimation.isWalking) {
+                // 角色移动时更新动画计时器
+                characterAnimation.animationTime += characterAnimation.walkingSpeed;
+                
+                // 计算四肢摆动角度(使用正弦函数创建摆动效果)
+                const swingAngle = Math.sin(characterAnimation.animationTime) * characterAnimation.maxSwingAngle;
+                
+                // 更新手臂摆动
+                if (character.leftArm && character.rightArm) {
+                    // 左右手臂相反方向摆动
+                    character.leftArm.rotation.x = swingAngle;
+                    character.rightArm.rotation.x = -swingAngle;
+                }
+                
+                // 更新腿部摆动
+                if (character.leftLeg && character.rightLeg) {
+                    // 左右腿相反方向摆动，与手臂也相反
+                    character.leftLeg.rotation.x = -swingAngle;
+                    character.rightLeg.rotation.x = swingAngle;
+                }
+            } else {
+                // 角色静止时慢慢恢复到默认姿势
+                characterAnimation.animationTime = 0;
+                
+                // 重置所有四肢旋转
+                if (character.leftArm) character.leftArm.rotation.x = 0;
+                if (character.rightArm) character.rightArm.rotation.x = 0;
+                if (character.leftLeg) character.leftLeg.rotation.x = 0;
+                if (character.rightLeg) character.rightLeg.rotation.x = 0;
+            }
         }
 
         // 添加性能优化辅助函数
@@ -745,7 +918,7 @@
             }
         }
 
-        // 修改放方块功能，添加防抖动机制
+        // 修改放置方块的功能，处理与玩家冲突情况
         function placeBlockWithDebounce() {
             if (!isPlacingBlock) {
                 isPlacingBlock = true;
@@ -773,6 +946,15 @@
                     const z = Math.floor(point.z + normal.z * 0.5);
 
                     if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize && world[x][y][z] === blockTypes.air) {
+                        // 检查是否与玩家位置冲突
+                        const playerBlockX = Math.floor(player.position.x);
+                        const playerBlockY = Math.floor(player.position.y);
+                        const playerBlockZ = Math.floor(player.position.z);
+                        
+                        // 检查将要放置的方块是否会与玩家碰撞
+                        const willCollideWithPlayer = (x === playerBlockX && y === playerBlockY && z === playerBlockZ) ||
+                                                      (x === playerBlockX && y === playerBlockY - 1 && z === playerBlockZ);
+                        
                         // 只能放置方块，不能放置道具1（矿镐）
                         if (inventory.selectedIndex !== 0 && inventory.items[inventory.selectedIndex].count > 0) {
                             // 根据当前选择的物品确定方块类型
@@ -799,6 +981,12 @@
 
                             world[x][y][z] = blockTypeToPlace;
                             createBlock(x, y, z, blockTypeToPlace);
+                            
+                            // 如果方块与玩家位置冲突，将玩家抬高
+                            if (willCollideWithPlayer) {
+                                console.log("检测到方块与玩家位置冲突，自动抬高玩家");
+                                player.position.y += 1.0; // 抬高一个方块的高度
+                            }
                             
                             // 减少物品数量并确保不会低于0
                             inventory.items[inventory.selectedIndex].count = Math.max(0, inventory.items[inventory.selectedIndex].count - 1);
@@ -1126,7 +1314,8 @@
                 `Look Direction:<br>` +
                 `X: ${lookDirection.x.toFixed(2)}<br>` +
                 `Y: ${lookDirection.y.toFixed(2)}<br>` +
-                `Z: ${lookDirection.z.toFixed(2)}`;
+                `Z: ${lookDirection.z.toFixed(2)}<br>` + 
+                `Current View: ${activeCamera === camera ? '第一人称' : '俯视'}`;
 
             // 使用防抖动版本的方块操作
             if (isMouseDown) {
@@ -1165,18 +1354,54 @@
                 }
             }
 
-            renderer.render(scene, camera);
+            // 使用当前活动摄像机进行渲染
+            renderer.render(scene, activeCamera);
         }
 
         // 窗口大小调整
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const aspect = window.innerWidth / window.innerHeight;
+            
+            // 更新主摄像机
+            camera.aspect = aspect;
             camera.updateProjectionMatrix();
+            
+            // 更新俯视摄像机
+            overviewCamera.aspect = aspect;
+            overviewCamera.updateProjectionMatrix();
+            
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
         // 初始化道具栏
         createInventoryUI();
+
+        // 在初始化场景部分后添加
+        // 创建俯视摄像机
+        const overviewCamera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // 设置摄像机位置 - 左上角45度俯视
+        overviewCamera.position.set(-20, 30, -20);
+        // 让摄像机指向世界中心
+        overviewCamera.lookAt(new THREE.Vector3(worldSize/2, 0, worldSize/2));
+
+        // 添加摄像机切换变量
+        let activeCamera = camera; // 默认使用主摄像机
+
+        // 添加额外的键盘事件处理，用于切换摄像机
+        document.addEventListener('keydown', (event) => {
+            // 检测Ctrl+1和Ctrl+2组合键
+            if (event.ctrlKey) {
+                if (event.key === '1') {
+                    // 切换到第一人称视角（角色头部摄像机）
+                    activeCamera = camera;
+                    console.log('切换到第一人称视角');
+                } else if (event.key === '2') {
+                    // 切换到俯视摄像机
+                    activeCamera = overviewCamera;
+                    console.log('切换到俯视视角');
+                }
+            }
+        });
 
         // 开始动画循环
         animate();
