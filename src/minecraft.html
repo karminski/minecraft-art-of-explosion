@@ -379,14 +379,70 @@
 
         // 生成地形
         function generateTerrain() {
+            // 创建初始高度图
+            const heightMap = [];
+            for (let x = 0; x < worldSize; x++) {
+                heightMap[x] = [];
+                for (let z = 0; z < worldSize; z++) {
+                    // 初始化为基础高度1-3之间的随机值
+                    heightMap[x][z] = Math.floor(Math.random() * 3) + 1;
+                }
+            }
+            
+            // 平滑高度图 - 多次迭代使地形更加平滑
+            const smoothIterations = 2;
+            for (let iteration = 0; iteration < smoothIterations; iteration++) {
+                const newHeightMap = [];
+                for (let x = 0; x < worldSize; x++) {
+                    newHeightMap[x] = [];
+                    for (let z = 0; z < worldSize; z++) {
+                        // 计算周围8个点的平均高度
+                        let totalHeight = heightMap[x][z];
+                        let count = 1;
+                        
+                        // 检查周围的8个点
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dz = -1; dz <= 1; dz++) {
+                                if (dx === 0 && dz === 0) continue; // 跳过中心点
+                                
+                                const nx = x + dx;
+                                const nz = z + dz;
+                                
+                                // 确保在边界内
+                                if (nx >= 0 && nx < worldSize && nz >= 0 && nz < worldSize) {
+                                    totalHeight += heightMap[nx][nz];
+                                    count++;
+                                }
+                            }
+                        }
+                        
+                        // 计算平均高度
+                        const averageHeight = totalHeight / count;
+                        
+                        // 添加轻微的随机波动，但保持平滑
+                        newHeightMap[x][z] = Math.max(1, Math.min(10, 
+                            Math.floor(averageHeight + (Math.random() * 0.6 - 0.3))));
+                    }
+                }
+                
+                // 更新高度图
+                for (let x = 0; x < worldSize; x++) {
+                    for (let z = 0; z < worldSize; z++) {
+                        heightMap[x][z] = newHeightMap[x][z];
+                    }
+                }
+            }
+            
+            // 使用高度图生成实际地形
             for (let x = 0; x < worldSize; x++) {
                 for (let z = 0; z < worldSize; z++) {
-                    // 地面层
-                    const height = Math.floor(Math.random() * 3) + 1;
+                    const height = heightMap[x][z];
+                    
+                    // 生成地形块
                     for (let y = 0; y < height; y++) {
                         if (y === height - 1) {
                             world[x][y][z] = blockTypes.grass;
-                        } else if (y === height - 2) {
+                        } else if (y >= height - 2) {
                             world[x][y][z] = blockTypes.dirt;
                         } else {
                             world[x][y][z] = blockTypes.stone;
@@ -397,20 +453,31 @@
         }
 
         // 生成树
-        function generateTree(x, z) {
+        function generateTree(x, y, z) {
             const height = Math.floor(Math.random() * 3) + 4;
             // 树干
-            for (let y = 1; y < height; y++) {
-                world[x][y][z] = blockTypes.tree;
+            for (let dy = 1; dy <= height; dy++) {
+                if (y + dy < worldSize) {
+                    world[x][y + dy][z] = blockTypes.tree;
+                }
             }
             // 树冠
             const crownSize = Math.floor(Math.random() * 2) + 2;
             for (let dx = -crownSize; dx <= crownSize; dx++) {
                 for (let dz = -crownSize; dz <= crownSize; dz++) {
-                    for (let y = height; y < height + crownSize; y++) {
+                    for (let dy = height; dy < height + crownSize; dy++) {
                         const distance = Math.sqrt(dx * dx + dz * dz);
                         if (distance < crownSize && Math.random() > 0.3) {
-                            world[x + dx][y][z + dz] = blockTypes.leaves;
+                            const tx = x + dx;
+                            const ty = y + dy;
+                            const tz = z + dz;
+                            
+                            // 确保在世界范围内
+                            if (tx >= 0 && tx < worldSize && 
+                                ty >= 0 && ty < worldSize && 
+                                tz >= 0 && tz < worldSize) {
+                                world[tx][ty][tz] = blockTypes.leaves;
+                            }
                         }
                     }
                 }
@@ -419,13 +486,67 @@
 
         // 随机生成树
         function generateTrees() {
-            const treeCount = Math.floor(Math.random() * 5) + 1;
-            for (let i = 0; i < treeCount; i++) {
+            // 增加树木数量为5-10棵
+            const treeCount = Math.floor(Math.random() * 6) + 5;
+            console.log(`正在生成 ${treeCount} 棵树...`);
+            
+            // 追踪已放置的树
+            let placedTrees = 0;
+            let attempts = 0;
+            const maxAttempts = 100; // 防止无限循环
+            
+            while (placedTrees < treeCount && attempts < maxAttempts) {
                 const x = Math.floor(Math.random() * worldSize);
                 const z = Math.floor(Math.random() * worldSize);
-                if (world[x][0][z] === blockTypes.grass) {
-                    generateTree(x, z);
+                
+                // 找到该位置的地面高度
+                let groundY = -1;
+                for (let y = worldSize - 1; y >= 0; y--) {
+                    if (world[x][y][z] === blockTypes.grass) {
+                        groundY = y;
+                        break;
+                    }
                 }
+                
+                // 如果找到草地，且周围有足够空间，则种树
+                if (groundY >= 0) {
+                    // 检查是否与其他树太近
+                    let tooClose = false;
+                    const minTreeDistance = 5; // 树之间的最小距离
+                    
+                    // 简单检查：如果4个方向都有足够的空间
+                    for (let dx = -minTreeDistance; dx <= minTreeDistance; dx++) {
+                        for (let dz = -minTreeDistance; dz <= minTreeDistance; dz++) {
+                            const nx = x + dx;
+                            const nz = z + dz;
+                            
+                            // 跳过自己的位置
+                            if (dx === 0 && dz === 0) continue;
+                            
+                            // 确保在边界内
+                            if (nx >= 0 && nx < worldSize && nz >= 0 && nz < worldSize) {
+                                // 检查该位置是否为树干
+                                for (let y = groundY + 1; y < groundY + 5; y++) {
+                                    if (y < worldSize && world[nx][y][nz] === blockTypes.tree) {
+                                        tooClose = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            if (tooClose) break;
+                        }
+                        
+                        if (tooClose) break;
+                    }
+                    
+                    if (!tooClose) {
+                        generateTree(x, groundY, z);
+                        placedTrees++;
+                    }
+                }
+                
+                attempts++;
             }
         }
 
@@ -798,7 +919,7 @@
             });
 
             const raycaster = new THREE.Raycaster();
-            raycaster.far = 3;
+            raycaster.far = 5;
             raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
             const visibleBlocks = blockReferences.filter(block => {
@@ -858,14 +979,14 @@
                 isBreakingBlock = true;
 
                 const raycaster = new THREE.Raycaster();
-                // 设置射线检测的长度为3个方块长度
-                raycaster.far = 3;
+                // 设置射线检测的长度为5个方块长度
+                raycaster.far = 5;
                 raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
                 // 只检测视野范围内的方块
                 const visibleBlocks = blockReferences.filter(block => {
                     const distance = camera.position.distanceTo(block.position);
-                    return distance < 5;
+                    return distance < 7;
                 });
 
                 const intersects = raycaster.intersectObjects(visibleBlocks);
@@ -924,8 +1045,8 @@
                 isPlacingBlock = true;
 
                 const raycaster = new THREE.Raycaster();
-                // 设置射线检测的长度为3个方块长度
-                raycaster.far = 3;
+                // 设置射线检测的长度为5个方块长度
+                raycaster.far = 5;
                 raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
                 // 只检测视野范围内的方块
