@@ -174,7 +174,8 @@
             dirt: 2,
             stone: 3,
             tree: 4,
-            leaves: 5
+            leaves: 5,
+            tnt: 6
         };
 
         // 加载纹理
@@ -183,7 +184,10 @@
             dirt: textureLoader.load('assets/images/dirt.png'),
             stone: textureLoader.load('assets/images/stone.png'),
             tree: textureLoader.load('assets/images/tree.png'),
-            leaves: textureLoader.load('assets/images/leaves.png')
+            leaves: textureLoader.load('assets/images/leaves.png'),
+            tntTop: textureLoader.load('assets/images/tnt-top.png'),
+            tntSide: textureLoader.load('assets/images/tnt-side.jpg'),
+            tntBottom: textureLoader.load('assets/images/tnt-bottom.png')
         };
 
         // 创建方块材质
@@ -192,7 +196,12 @@
             dirt: new THREE.MeshPhongMaterial({ map: textures.dirt, color: 0x8b4513 }),
             stone: new THREE.MeshPhongMaterial({ map: textures.stone, color: 0x808080 }),
             tree: new THREE.MeshPhongMaterial({ map: textures.tree, color: 0x8b4513 }),
-            leaves: new THREE.MeshPhongMaterial({ map: textures.leaves, color: 0x32cd32, transparent: true, opacity: 0.8 })
+            leaves: new THREE.MeshPhongMaterial({ map: textures.leaves, color: 0x32cd32, transparent: true, opacity: 0.8 }),
+            tnt: new THREE.MeshPhongMaterial({
+                map: textures.tntSide,
+                color: 0x8b4513,
+                side: THREE.DoubleSide
+            })
         };
 
         // 世界大小
@@ -201,22 +210,55 @@
         // 保存所有创建的方块
         const blockReferences = [];
 
-        // 修改createBlock函数以保存引用
+        // 添加这一行在 TNT 相关函数之前（可放在 world 数组定义之后）
+        const tntTimers = {};
+
+        // 修改createBlock函数以处理TNT的特殊贴图
         function createBlock(x, y, z, type) {
             const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = materials[Object.keys(blockTypes).find(key => blockTypes[key] === type)];
-            const cube = new THREE.Mesh(geometry, material);
-            cube.position.set(x + 0.5, y + 0.5, z + 0.5);
-            cube.type = type;
-            cube.blockX = x;
-            cube.blockY = y;
-            cube.blockZ = z;
-            scene.add(cube);
+            let material;
+            if (type === blockTypes.tnt) {
+                // 创建TNT的六面材质
+                const materials = [
+                    new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 右侧
+                    new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 左侧
+                    new THREE.MeshPhongMaterial({ map: textures.tntTop }), // 顶部
+                    new THREE.MeshPhongMaterial({ map: textures.tntBottom }), // 底部
+                    new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 前侧
+                    new THREE.MeshPhongMaterial({ map: textures.tntSide })  // 后侧
+                ];
+                
+                const tntMesh = new THREE.Mesh(geometry, materials);
+                tntMesh.position.set(x + 0.5, y + 0.5, z + 0.5);
+                tntMesh.type = type;
+                tntMesh.blockX = x;
+                tntMesh.blockY = y;
+                tntMesh.blockZ = z;
+                tntMesh.originalMaterial = materials;
+                scene.add(tntMesh);
 
-            // 保存引用到数组
-            blockReferences.push(cube);
+                // 保存引用到数组
+                blockReferences.push(tntMesh);
+                
+                // 激活TNT
+                startTNTTimer(tntMesh);
+                
+                return tntMesh;
+            } else {
+                const material = materials[Object.keys(blockTypes).find(key => blockTypes[key] === type)];
+                const cube = new THREE.Mesh(geometry, material);
+                cube.position.set(x + 0.5, y + 0.5, z + 0.5);
+                cube.type = type;
+                cube.blockX = x;
+                cube.blockY = y;
+                cube.blockZ = z;
+                scene.add(cube);
 
-            return cube;
+                // 保存引用到数组
+                blockReferences.push(cube);
+
+                return cube;
+            }
         }
 
         // 创建世界
@@ -466,43 +508,69 @@
             // 先重置所有方块
             blockReferences.forEach(block => {
                 if (block.isHighlighted) {
-                    block.material = block.originalMaterial;
+                    // 判断是否为TNT方块（使用材质数组）
+                    if (Array.isArray(block.originalMaterial)) {
+                        block.material = block.originalMaterial;
+                    } else if (block.originalMaterials) { 
+                        // 如果是正在倒计时的TNT，不修改其材质
+                    } else {
+                        block.material = block.originalMaterial;
+                    }
                     block.isHighlighted = false;
                 }
             });
 
             const raycaster = new THREE.Raycaster();
-            // 设置射线检测的长度为3个方块长度
             raycaster.far = 3;
             raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
-            // 优化：只检测可能在视野范围内的方块
             const visibleBlocks = blockReferences.filter(block => {
                 const distance = camera.position.distanceTo(block.position);
-                return distance < 5; // 只检测5个单位距离内的方块
+                return distance < 5;
             });
 
             const intersects = raycaster.intersectObjects(visibleBlocks);
 
             if (intersects.length > 0) {
                 const block = intersects[0].object;
+                
+                // 如果是正在计时的TNT，跳过高亮处理
+                if (block.type === blockTypes.tnt && block.originalMaterials) {
+                    return;
+                }
 
                 // 保存原始材质
                 if (!block.originalMaterial) {
-                    block.originalMaterial = block.material.clone();
+                    // 检查是否为使用材质数组的方块
+                    if (Array.isArray(block.material)) {
+                        block.originalMaterial = block.material.map(mat => mat.clone());
+                    } else {
+                        block.originalMaterial = block.material.clone();
+                    }
                 }
 
-                // 创建新的高亮材质 - 基于原始材质但添加发光效果
-                const highlightMaterial = block.originalMaterial.clone();
-
-                // 添加发光效果（仅对MeshPhongMaterial和MeshStandardMaterial有效）
-                if (highlightMaterial.emissive) {
-                    highlightMaterial.emissive.set(0xffff00); // 黄色发光
-                    highlightMaterial.emissiveIntensity = 0.1; // 降低发光强度为0.1
+                // 创建高亮材质
+                if (Array.isArray(block.material)) {
+                    // 如果是材质数组（TNT），为每个面创建高亮版本
+                    const highlightMaterials = block.originalMaterial.map(mat => {
+                        const highlightMat = mat.clone();
+                        if (highlightMat.emissive) {
+                            highlightMat.emissive.set(0xffff00);
+                            highlightMat.emissiveIntensity = 0.1;
+                        }
+                        return highlightMat;
+                    });
+                    block.material = highlightMaterials;
+                } else {
+                    // 单一材质的处理方式不变
+                    const highlightMaterial = block.originalMaterial.clone();
+                    if (highlightMaterial.emissive) {
+                        highlightMaterial.emissive.set(0xffff00);
+                        highlightMaterial.emissiveIntensity = 0.1;
+                    }
+                    block.material = highlightMaterial;
                 }
-
-                // 应用高亮材质
-                block.material = highlightMaterial;
+                
                 block.isHighlighted = true;
             }
         }
@@ -618,10 +686,13 @@
                                 case 5: // 树叶
                                     blockTypeToPlace = blockTypes.leaves;
                                     break;
+                                case 1: // TNT
+                                    blockTypeToPlace = blockTypes.tnt;
+                                    break;
                                 default:
                                     blockTypeToPlace = blockTypes.stone; // 默认为石头
                             }
-                            
+
                             world[x][y][z] = blockTypeToPlace;
                             createBlock(x, y, z, blockTypeToPlace);
                             inventory.items[inventory.selectedIndex].count -= 1;
@@ -655,7 +726,7 @@
         const inventory = {
             items: [
                 { name: 'pickaxe', texture: 'assets/images/pickaxe.png', count: 1 },
-                { name: 'tnt', texture: 'assets/images/tnt-side.jpg', count: 0 },
+                { name: 'tnt', texture: 'assets/images/tnt-side.jpg', count: 10 },
                 { name: 'dirt', texture: 'assets/images/dirt.png', count: 0 },
                 { name: 'stone', texture: 'assets/images/stone.png', count: 0 },
                 { name: 'tree', texture: 'assets/images/tree.png', count: 0 },
@@ -740,6 +811,127 @@
         crosshairCtx.lineTo(20, 10);
         crosshairCtx.strokeStyle = 'white';
         crosshairCtx.stroke();
+
+        // 改进TNT爆炸函数，增加射线检测和石头阻挡功能
+        function explodeTNT(x, y, z) {
+            // 从TNT发出射线检测
+            const tntPosition = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
+            
+            // 遍历爆炸范围内的所有方块
+            for (let dx = -2; dx <= 2; dx++) {
+                for (let dy = -2; dy <= 2; dy++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        const blockX = x + dx;
+                        const blockY = y + dy;
+                        const blockZ = z + dz;
+
+                        // 检查是否在世界范围内
+                        if (blockX >= 0 && blockX < worldSize && 
+                            blockY >= 0 && blockY < worldSize && 
+                            blockZ >= 0 && blockZ < worldSize) {
+                            
+                            // 跳过TNT本身的位置
+                            if (dx === 0 && dy === 0 && dz === 0) continue;
+                            
+                            // 如果是石头方块，则不移除（免疫TNT）
+                            if (world[blockX][blockY][blockZ] === blockTypes.stone) {
+                                continue;
+                            }
+                            
+                            // 如果不是空气，执行射线检测
+                            if (world[blockX][blockY][blockZ] !== blockTypes.air) {
+                                // 计算方块中心
+                                const blockPosition = new THREE.Vector3(
+                                    blockX + 0.5, 
+                                    blockY + 0.5, 
+                                    blockZ + 0.5
+                                );
+                                
+                                // 方向向量：从TNT指向目标方块
+                                const direction = new THREE.Vector3().subVectors(blockPosition, tntPosition).normalize();
+                                
+                                // 创建射线
+                                const raycaster = new THREE.Raycaster(tntPosition, direction);
+                                
+                                // 查找可能阻挡的方块
+                                const distance = tntPosition.distanceTo(blockPosition);
+                                const intersects = raycaster.intersectObjects(blockReferences);
+                                
+                                let blocked = false;
+                                
+                                // 检查是否被石头阻挡
+                                for (let i = 0; i < intersects.length; i++) {
+                                    // 如果在到达目标方块前碰到石头，则被阻挡
+                                    if (intersects[i].distance < distance && 
+                                        intersects[i].object.type === blockTypes.stone) {
+                                        blocked = true;
+                                        break;
+                                    }
+                                }
+                                
+                                // 如果没有被石头阻挡，则移除方块
+                                if (!blocked) {
+                                    world[blockX][blockY][blockZ] = blockTypes.air;
+                                    // 移除对应的方块对象
+                                    const blockIndex = blockReferences.findIndex(block =>
+                                        block.blockX === blockX && block.blockY === blockY && block.blockZ === blockZ
+                                    );
+                                    if (blockIndex !== -1) {
+                                        scene.remove(blockReferences[blockIndex]);
+                                        blockReferences.splice(blockIndex, 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 改进TNT计时器和闪烁效果
+        function startTNTTimer(block) {
+            // 保存原始材质（数组）
+            block.originalMaterials = block.material;
+            
+            // 创建高亮材质数组
+            const highlightMaterials = block.material.map(mat => {
+                const highlightMat = mat.clone();
+                if (highlightMat.emissive) {
+                    highlightMat.emissive.set(0xffff00);
+                    highlightMat.emissiveIntensity = 0.3;
+                }
+                return highlightMat;
+            });
+            
+            // 闪烁效果
+            let isHighlighted = false;
+            const highlightInterval = setInterval(() => {
+                if (isHighlighted) {
+                    block.material = block.originalMaterials;
+                } else {
+                    block.material = highlightMaterials;
+                }
+                isHighlighted = !isHighlighted;
+            }, 200);
+
+            // 倒计时3秒后爆炸
+            setTimeout(() => {
+                clearInterval(highlightInterval);
+                explodeTNT(block.blockX, block.blockY, block.blockZ);
+                world[block.blockX][block.blockY][block.blockZ] = blockTypes.air;
+                scene.remove(block);
+                const index = blockReferences.indexOf(block);
+                if (index > -1) {
+                    blockReferences.splice(index, 1);
+                }
+                delete tntTimers[block.uuid];
+            }, 3000);
+
+            tntTimers[block.uuid] = {
+                highlightInterval: highlightInterval,
+                explodeTimeout: setTimeout(() => { }, 3000) // 占位
+            };
+        }
 
         function animate(currentTime) {
             requestAnimationFrame(animate);
