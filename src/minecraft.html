@@ -377,59 +377,95 @@
             }
         }
 
+        // 添加简化版柏林噪声函数
+        function perlinNoise2D() {
+            // 创建梯度网格
+            const gradients = {};
+            const gridSize = 8; // 网格大小
+            
+            // 创建随机梯度向量
+            function createGradient(ix, iz) {
+                const key = ix + "," + iz;
+                if (!gradients[key]) {
+                    const angle = Math.random() * Math.PI * 2;
+                    gradients[key] = [Math.cos(angle), Math.sin(angle)];
+                }
+                return gradients[key];
+            }
+            
+            // 点积计算
+            function dotProduct(ix, iz, x, z) {
+                const gradient = createGradient(ix, iz);
+                const dx = x - ix;
+                const dz = z - iz;
+                return dx * gradient[0] + dz * gradient[1];
+            }
+            
+            // 平滑插值
+            function smootherStep(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+            
+            // 线性插值
+            function interpolate(a, b, t) {
+                return a + smootherStep(t) * (b - a);
+            }
+            
+            // 生成噪声
+            return function(x, z) {
+                // 缩放坐标到网格大小
+                x = x / gridSize;
+                z = z / gridSize;
+                
+                // 获取网格单元坐标
+                const x0 = Math.floor(x);
+                const z0 = Math.floor(z);
+                const x1 = x0 + 1;
+                const z1 = z0 + 1;
+                
+                // 计算相对坐标
+                const sx = x - x0;
+                const sz = z - z0;
+                
+                // 计算四个角的贡献
+                const n0 = dotProduct(x0, z0, x, z);
+                const n1 = dotProduct(x1, z0, x, z);
+                const ix0 = interpolate(n0, n1, sx);
+                
+                const n2 = dotProduct(x0, z1, x, z);
+                const n3 = dotProduct(x1, z1, x, z);
+                const ix1 = interpolate(n2, n3, sx);
+                
+                // 最终插值
+                const value = interpolate(ix0, ix1, sz);
+                
+                // 映射到[0,1]范围
+                return (value + 1) * 0.5;
+            };
+        }
+
         // 生成地形
         function generateTerrain() {
+            console.log("使用柏林噪声生成地形...");
+            
+            // 创建柏林噪声函数
+            const noise = perlinNoise2D();
+            
             // 创建初始高度图
             const heightMap = [];
             for (let x = 0; x < worldSize; x++) {
                 heightMap[x] = [];
                 for (let z = 0; z < worldSize; z++) {
-                    // 初始化为基础高度1-3之间的随机值
-                    heightMap[x][z] = Math.floor(Math.random() * 3) + 1;
-                }
-            }
-            
-            // 平滑高度图 - 多次迭代使地形更加平滑
-            const smoothIterations = 2;
-            for (let iteration = 0; iteration < smoothIterations; iteration++) {
-                const newHeightMap = [];
-                for (let x = 0; x < worldSize; x++) {
-                    newHeightMap[x] = [];
-                    for (let z = 0; z < worldSize; z++) {
-                        // 计算周围8个点的平均高度
-                        let totalHeight = heightMap[x][z];
-                        let count = 1;
-                        
-                        // 检查周围的8个点
-                        for (let dx = -1; dx <= 1; dx++) {
-                            for (let dz = -1; dz <= 1; dz++) {
-                                if (dx === 0 && dz === 0) continue; // 跳过中心点
-                                
-                                const nx = x + dx;
-                                const nz = z + dz;
-                                
-                                // 确保在边界内
-                                if (nx >= 0 && nx < worldSize && nz >= 0 && nz < worldSize) {
-                                    totalHeight += heightMap[nx][nz];
-                                    count++;
-                                }
-                            }
-                        }
-                        
-                        // 计算平均高度
-                        const averageHeight = totalHeight / count;
-                        
-                        // 添加轻微的随机波动，但保持平滑
-                        newHeightMap[x][z] = Math.max(1, Math.min(10, 
-                            Math.floor(averageHeight + (Math.random() * 0.6 - 0.3))));
-                    }
-                }
-                
-                // 更新高度图
-                for (let x = 0; x < worldSize; x++) {
-                    for (let z = 0; z < worldSize; z++) {
-                        heightMap[x][z] = newHeightMap[x][z];
-                    }
+                    // 使用柏林噪声，计算高度，范围为2-6
+                    // 使用多个频率的噪声相加，创造更丰富的地形
+                    const baseNoise = noise(x, z);
+                    const detailNoise = noise(x * 2, z * 2) * 0.5;
+                    
+                    // 混合基础噪声和细节噪声
+                    const combinedNoise = baseNoise * 0.7 + detailNoise * 0.3;
+                    
+                    // 将噪声值映射到高度范围2-6
+                    heightMap[x][z] = Math.floor(combinedNoise * 4) + 2;
                 }
             }
             
@@ -442,10 +478,58 @@
                     for (let y = 0; y < height; y++) {
                         if (y === height - 1) {
                             world[x][y][z] = blockTypes.grass;
-                        } else if (y >= height - 2) {
+                        } else if (y >= height - 3) { // 增加泥土层厚度，从最顶部往下3格
                             world[x][y][z] = blockTypes.dirt;
                         } else {
                             world[x][y][z] = blockTypes.stone;
+                        }
+                    }
+                }
+            }
+            
+            // 添加一些随机变化，使地形更自然
+            const smoothingPasses = 1;
+            for (let pass = 0; pass < smoothingPasses; pass++) {
+                for (let x = 1; x < worldSize - 1; x++) {
+                    for (let z = 1; z < worldSize - 1; z++) {
+                        // 有10%的概率在平坦区域创建小山丘或洼地
+                        if (Math.random() < 0.1) {
+                            const currentHeight = heightMap[x][z];
+                            const neighborAvg = (heightMap[x-1][z] + heightMap[x+1][z] + 
+                                                 heightMap[x][z-1] + heightMap[x][z+1]) / 4;
+                            
+                            // 如果周围较平坦，则添加一些随机变化
+                            if (Math.abs(currentHeight - neighborAvg) < 0.5) {
+                                const newHeight = currentHeight + (Math.random() > 0.5 ? 1 : -1);
+                                // 确保高度在有效范围内
+                                const adjustedHeight = Math.max(2, Math.min(6, newHeight));
+                                
+                                // 如果高度增加，需要添加方块
+                                if (adjustedHeight > currentHeight) {
+                                    for (let y = currentHeight; y < adjustedHeight; y++) {
+                                        if (y === adjustedHeight - 1) {
+                                            world[x][y][z] = blockTypes.grass;
+                                            // 将之前的草方块转为泥土
+                                            if (currentHeight > 0) {
+                                                world[x][currentHeight-1][z] = blockTypes.dirt;
+                                            }
+                                        } else {
+                                            world[x][y][z] = blockTypes.dirt;
+                                        }
+                                    }
+                                } 
+                                // 如果高度减少，需要移除方块并将新的顶层设为草
+                                else if (adjustedHeight < currentHeight) {
+                                    for (let y = adjustedHeight; y < currentHeight; y++) {
+                                        world[x][y][z] = blockTypes.air;
+                                    }
+                                    if (adjustedHeight > 0) {
+                                        world[x][adjustedHeight-1][z] = blockTypes.grass;
+                                    }
+                                }
+                                
+                                heightMap[x][z] = adjustedHeight;
+                            }
                         }
                     }
                 }
