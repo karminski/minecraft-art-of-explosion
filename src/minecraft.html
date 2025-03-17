@@ -985,11 +985,42 @@
         let isPlacingBlock = false;
         const blockActionCooldown = 250; // 操作冷却时间(毫秒)
 
+        // 在全局添加视锥和矩阵变量，放在初始化场景、相机和渲染器的代码之后
+        const frustum = new THREE.Frustum();
+        const tempMatrix = new THREE.Matrix4();
+        const cameraViewMatrix = new THREE.Matrix4();
+        const cameraProjectionMatrix = new THREE.Matrix4();
+
+        // 添加可配置的渲染距离参数
+        const renderSettings = {
+            normalRenderDistance: 25,
+            reducedRenderDistance: 10,
+            lookingDownThreshold: -0.3,
+            currentRenderDistance: 35
+        };
+
+        // 添加视锥检测函数
+        function updateFrustum() {
+            // 更新投影视图矩阵
+            camera.updateMatrixWorld();
+            cameraViewMatrix.copy(camera.matrixWorldInverse);
+            cameraProjectionMatrix.copy(camera.projectionMatrix);
+            
+            // 计算视锥
+            tempMatrix.multiplyMatrices(cameraProjectionMatrix, cameraViewMatrix);
+            frustum.setFromProjectionMatrix(tempMatrix);
+        }
+
+        // 检查方块是否在视锥内
+        function isInViewFrustum(position) {
+            return frustum.containsPoint(position);
+        }
+
         // 高亮效果函数 - 添加了节流和范围优化
         function highlightBlock() {
-            // 先重置所有方块
+            // 重置所有方块的高亮状态
             blockReferences.forEach(block => {
-                if (block.isHighlighted) {
+                if (block && block.isHighlighted) {
                     // 判断是否为TNT方块（使用材质数组）
                     if (Array.isArray(block.originalMaterial)) {
                         block.material = block.originalMaterial;
@@ -1006,9 +1037,11 @@
             raycaster.far = 5;
             raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
+            // 只检测视野范围内且可见的方块
             const visibleBlocks = blockReferences.filter(block => {
-                const distance = camera.position.distanceTo(block.position);
-                return distance < 5;
+                if (!block) return false;
+                return block.visible && 
+                       camera.position.distanceTo(block.position) < 5;
             });
 
             const intersects = raycaster.intersectObjects(visibleBlocks);
@@ -1486,7 +1519,7 @@
             };
         }
 
-        // 添加爆炸碎片的更新逻辑到animate函数中
+        // 在animate函数内添加视锥剔除和距离裁剪的逻辑
         function animate(currentTime) {
             requestAnimationFrame(animate);
 
@@ -1496,6 +1529,50 @@
             lastFrameTime = currentTime;
 
             updateCamera();
+            
+            // 获取相机朝向向量
+            const lookDirection = new THREE.Vector3();
+            camera.getWorldDirection(lookDirection);
+            
+            // 只有在第一人称视角时才应用视锥剔除和距离裁剪
+            if (activeCamera === camera) {
+                // 更新视锥
+                updateFrustum();
+                
+                // 动态调整渲染距离，当看向地面时减小可见距离
+                if (lookDirection.y < renderSettings.lookingDownThreshold) {
+                    // 根据向下看的角度程度动态调整渲染距离
+                    const factor = Math.min(1, Math.abs(lookDirection.y / -1.0));
+                    renderSettings.currentRenderDistance = renderSettings.normalRenderDistance - 
+                        (renderSettings.normalRenderDistance - renderSettings.reducedRenderDistance) * factor;
+                } else {
+                    renderSettings.currentRenderDistance = renderSettings.normalRenderDistance;
+                }
+                
+                // 应用视锥剔除和距离裁剪
+                const cameraPosition = camera.position.clone();
+                blockReferences.forEach(block => {
+                    if (!block) return;
+                    
+                    // 忽略天空，天空始终可见
+                    if (block.isSky) {
+                        block.visible = true;
+                        return;
+                    }
+                    
+                    // 计算到相机的距离
+                    const distanceToCamera = cameraPosition.distanceTo(block.position);
+                    
+                    // 应用距离裁剪和视锥剔除
+                    block.visible = distanceToCamera <= renderSettings.currentRenderDistance && 
+                                    isInViewFrustum(block.position);
+                });
+            } else {
+                // 在俯视视角下，显示所有方块
+                blockReferences.forEach(block => {
+                    if (block) block.visible = true;
+                });
+            }
 
             // 优化：节流高亮方块的射线检测
             if (currentTime - lastRaycastTime > raycastInterval) {
@@ -1503,11 +1580,7 @@
                 lastRaycastTime = currentTime;
             }
 
-            // 获取相机朝向向量
-            const lookDirection = new THREE.Vector3();
-            camera.getWorldDirection(lookDirection);
-
-            // 更新调试面板
+            // 更新调试面板，添加渲染模式信息
             const debugPanel = document.getElementById('debug-panel');
             debugPanel.innerHTML =
                 `FPS: ${fps}<br>` +
@@ -1515,12 +1588,14 @@
                 `Camera Position:<br>` +
                 `X: ${camera.position.x.toFixed(2)}<br>` +
                 `Y: ${camera.position.y.toFixed(2)}<br>` +
-                `Z: ${camera.position.z.toFixed(2)}<br>` +
+                `Z: ${camera.position.z.toFixed(2)}<br>` + 
                 `Look Direction:<br>` +
                 `X: ${lookDirection.x.toFixed(2)}<br>` +
                 `Y: ${lookDirection.y.toFixed(2)}<br>` +
                 `Z: ${lookDirection.z.toFixed(2)}<br>` + 
-                `Current View: ${activeCamera === camera ? '第一人称' : '俯视'}`;
+                `Current View: ${activeCamera === camera ? '第一人称' : '俯视'}<br>` +
+                `Render Mode: ${activeCamera === camera ? '视锥剔除' : '全部渲染'}<br>` +
+                `Render Distance: ${activeCamera === camera ? renderSettings.currentRenderDistance.toFixed(1) : '无限制'}`;
 
             // 使用防抖动版本的方块操作
             if (isMouseDown) {
@@ -1600,10 +1675,26 @@
                     // 切换到第一人称视角（角色头部摄像机）
                     activeCamera = camera;
                     console.log('切换到第一人称视角');
+                    
+                    // 切换回第一人称时，重新应用视锥剔除
+                    updateFrustum();
+                    const cameraPosition = camera.position.clone();
+                    blockReferences.forEach(block => {
+                        if (!block || block.isSky) return;
+                        const distanceToCamera = cameraPosition.distanceTo(block.position);
+                        block.visible = distanceToCamera <= renderSettings.currentRenderDistance && 
+                                        isInViewFrustum(block.position);
+                    });
+                    
                 } else if (event.key === '2') {
                     // 切换到俯视摄像机
                     activeCamera = overviewCamera;
                     console.log('切换到俯视视角');
+                    
+                    // 切换到俯视时，显示所有方块
+                    blockReferences.forEach(block => {
+                        if (block) block.visible = true;
+                    });
                 }
             }
         });
