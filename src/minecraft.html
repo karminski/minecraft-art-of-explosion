@@ -444,7 +444,15 @@
             camera.position.copy(player.position);
         }
 
-        // 高亮效果函数 - 仅使用发光，不放大方块
+        // 添加性能优化辅助函数
+        let lastRaycastTime = 0;
+        const raycastInterval = 100; // 每100毫秒检测一次
+
+        let isBreakingBlock = false;
+        let isPlacingBlock = false;
+        const blockActionCooldown = 250; // 操作冷却时间(毫秒)
+
+        // 高亮效果函数 - 添加了节流和范围优化
         function highlightBlock() {
             // 先重置所有方块
             blockReferences.forEach(block => {
@@ -455,8 +463,17 @@
             });
             
             const raycaster = new THREE.Raycaster();
+            // 设置射线检测的长度为3个方块长度
+            raycaster.far = 3;
             raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-            const intersects = raycaster.intersectObjects(blockReferences);
+            
+            // 优化：只检测可能在视野范围内的方块
+            const visibleBlocks = blockReferences.filter(block => {
+                const distance = camera.position.distanceTo(block.position);
+                return distance < 5; // 只检测5个单位距离内的方块
+            });
+            
+            const intersects = raycaster.intersectObjects(visibleBlocks);
             
             if (intersects.length > 0) {
                 const block = intersects[0].object;
@@ -481,6 +498,88 @@
             }
         }
 
+        // 修改挖方块功能，添加防抖动机制
+        function breakBlockWithDebounce() {
+            if (!isBreakingBlock) {
+                isBreakingBlock = true;
+                
+                const raycaster = new THREE.Raycaster();
+                // 设置射线检测的长度为3个方块长度
+                raycaster.far = 3;
+                raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
+                
+                // 只检测视野范围内的方块
+                const visibleBlocks = blockReferences.filter(block => {
+                    const distance = camera.position.distanceTo(block.position);
+                    return distance < 5;
+                });
+                
+                const intersects = raycaster.intersectObjects(visibleBlocks);
+
+                if (intersects.length > 0) {
+                    const block = intersects[0].object;
+                    const x = block.blockX;
+                    const y = block.blockY;
+                    const z = block.blockZ;
+
+                    if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize) {
+                        world[x][y][z] = blockTypes.air;
+                        scene.remove(block);
+                        // 从引用数组中移除
+                        const index = blockReferences.indexOf(block);
+                        if (index > -1) {
+                            blockReferences.splice(index, 1);
+                        }
+                    }
+                }
+                
+                // 添加冷却时间
+                setTimeout(() => {
+                    isBreakingBlock = false;
+                }, blockActionCooldown);
+            }
+        }
+
+        // 修改放方块功能，添加防抖动机制
+        function placeBlockWithDebounce() {
+            if (!isPlacingBlock) {
+                isPlacingBlock = true;
+                
+                const raycaster = new THREE.Raycaster();
+                // 设置射线检测的长度为3个方块长度
+                raycaster.far = 3;
+                raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
+                
+                // 只检测视野范围内的方块
+                const visibleBlocks = blockReferences.filter(block => {
+                    const distance = camera.position.distanceTo(block.position);
+                    return distance < 5;
+                });
+                
+                const intersects = raycaster.intersectObjects(visibleBlocks);
+
+                if (intersects.length > 0) {
+                    const block = intersects[0].object;
+                    const point = intersects[0].point;
+                    const normal = intersects[0].face.normal;
+
+                    const x = Math.floor(point.x + normal.x * 0.5);
+                    const y = Math.floor(point.y + normal.y * 0.5);
+                    const z = Math.floor(point.z + normal.z * 0.5);
+
+                    if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize && world[x][y][z] === blockTypes.air) {
+                        world[x][y][z] = blockTypes.stone;
+                        createBlock(x, y, z, blockTypes.stone);
+                    }
+                }
+                
+                // 添加冷却时间
+                setTimeout(() => {
+                    isPlacingBlock = false;
+                }, blockActionCooldown);
+            }
+        }
+
         // 移除测试按键，只保留必要的键盘事件处理程序
         document.addEventListener('keydown', (event) => {
             if (event.key >= '1' && event.key <= '5') {
@@ -494,52 +593,6 @@
                 document.body.requestPointerLock();
             }
         });
-
-        // 修改挖方块功能，使用blockReferences
-        function breakBlock() {
-            const raycaster = new THREE.Raycaster();
-            raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-            const intersects = raycaster.intersectObjects(blockReferences);
-
-            if (intersects.length > 0) {
-                const block = intersects[0].object;
-                const x = block.blockX;
-                const y = block.blockY;
-                const z = block.blockZ;
-
-                if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize) {
-                    world[x][y][z] = blockTypes.air;
-                    scene.remove(block);
-                    // 从引用数组中移除
-                    const index = blockReferences.indexOf(block);
-                    if (index > -1) {
-                        blockReferences.splice(index, 1);
-                    }
-                }
-            }
-        }
-
-        // 同样修改放方块功能
-        function placeBlock() {
-            const raycaster = new THREE.Raycaster();
-            raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-            const intersects = raycaster.intersectObjects(blockReferences);
-
-            if (intersects.length > 0) {
-                const block = intersects[0].object;
-                const point = intersects[0].point;
-                const normal = intersects[0].face.normal;
-
-                const x = Math.floor(point.x + normal.x * 0.5);
-                const y = Math.floor(point.y + normal.y * 0.5);
-                const z = Math.floor(point.z + normal.z * 0.5);
-
-                if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize && world[x][y][z] === blockTypes.air) {
-                    world[x][y][z] = blockTypes.stone;
-                    createBlock(x, y, z, blockTypes.stone);
-                }
-            }
-        }
 
         // 道具栏功能
         const inventory = {
@@ -616,7 +669,12 @@
             lastFrameTime = currentTime;
 
             updateCamera();
-            highlightBlock();
+            
+            // 优化：节流高亮方块的射线检测
+            if (currentTime - lastRaycastTime > raycastInterval) {
+                highlightBlock();
+                lastRaycastTime = currentTime;
+            }
 
             // 获取相机朝向向量
             const lookDirection = new THREE.Vector3();
@@ -636,12 +694,13 @@
                 `Y: ${lookDirection.y.toFixed(2)}<br>` +
                 `Z: ${lookDirection.z.toFixed(2)}`;
 
+            // 使用防抖动版本的方块操作
             if (isMouseDown) {
-                breakBlock();
+                breakBlockWithDebounce();
             }
 
             if (isRightMouseDown) {
-                placeBlock();
+                placeBlockWithDebounce();
             }
 
             renderer.render(scene, camera);
