@@ -61,6 +61,7 @@
             align-items: center;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
 
         .inventory-slot.selected {
@@ -72,6 +73,14 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+
+        .item-count {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            color: white;
+            font-size: 12px;
         }
 
         #crosshair {
@@ -94,7 +103,7 @@
         左键 - 挖方块<br>
         右键 - 放方块<br>
         按M锁定鼠标<br>
-        1-5 - 切换道具<br>
+        1-8 - 切换道具<br>
         <br>
         调试按键:<br>
         R - 重置所有方块<br>
@@ -203,10 +212,10 @@
             cube.blockY = y;
             cube.blockZ = z;
             scene.add(cube);
-            
+
             // 保存引用到数组
             blockReferences.push(cube);
-            
+
             return cube;
         }
 
@@ -461,37 +470,37 @@
                     block.isHighlighted = false;
                 }
             });
-            
+
             const raycaster = new THREE.Raycaster();
             // 设置射线检测的长度为3个方块长度
             raycaster.far = 3;
             raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-            
+
             // 优化：只检测可能在视野范围内的方块
             const visibleBlocks = blockReferences.filter(block => {
                 const distance = camera.position.distanceTo(block.position);
                 return distance < 5; // 只检测5个单位距离内的方块
             });
-            
+
             const intersects = raycaster.intersectObjects(visibleBlocks);
-            
+
             if (intersects.length > 0) {
                 const block = intersects[0].object;
-                
+
                 // 保存原始材质
                 if (!block.originalMaterial) {
                     block.originalMaterial = block.material.clone();
                 }
-                
+
                 // 创建新的高亮材质 - 基于原始材质但添加发光效果
                 const highlightMaterial = block.originalMaterial.clone();
-                
+
                 // 添加发光效果（仅对MeshPhongMaterial和MeshStandardMaterial有效）
                 if (highlightMaterial.emissive) {
                     highlightMaterial.emissive.set(0xffff00); // 黄色发光
                     highlightMaterial.emissiveIntensity = 0.1; // 降低发光强度为0.1
                 }
-                
+
                 // 应用高亮材质
                 block.material = highlightMaterial;
                 block.isHighlighted = true;
@@ -502,18 +511,18 @@
         function breakBlockWithDebounce() {
             if (!isBreakingBlock) {
                 isBreakingBlock = true;
-                
+
                 const raycaster = new THREE.Raycaster();
                 // 设置射线检测的长度为3个方块长度
                 raycaster.far = 3;
                 raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-                
+
                 // 只检测视野范围内的方块
                 const visibleBlocks = blockReferences.filter(block => {
                     const distance = camera.position.distanceTo(block.position);
                     return distance < 5;
                 });
-                
+
                 const intersects = raycaster.intersectObjects(visibleBlocks);
 
                 if (intersects.length > 0) {
@@ -523,16 +532,40 @@
                     const z = block.blockZ;
 
                     if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize) {
-                        world[x][y][z] = blockTypes.air;
-                        scene.remove(block);
-                        // 从引用数组中移除
-                        const index = blockReferences.indexOf(block);
-                        if (index > -1) {
-                            blockReferences.splice(index, 1);
+                        // 只有使用道具1（矿镐）才能挖掘方块
+                        if (inventory.selectedIndex === 0) {
+                            world[x][y][z] = blockTypes.air;
+                            scene.remove(block);
+                            // 从引用数组中移除
+                            const index = blockReferences.indexOf(block);
+                            if (index > -1) {
+                                blockReferences.splice(index, 1);
+                            }
+
+                            // 根据方块类型添加到对应的道具栏
+                            switch (block.type) {
+                                case blockTypes.grass: // 添加草方块的处理
+                                    inventory.items[2].count += 1; // 也算作泥土
+                                    break;
+                                case blockTypes.dirt:
+                                    inventory.items[2].count += 1;
+                                    break;
+                                case blockTypes.stone:
+                                    inventory.items[3].count += 1;
+                                    break;
+                                case blockTypes.tree:
+                                    inventory.items[4].count += 1;
+                                    break;
+                                case blockTypes.leaves:
+                                    inventory.items[5].count += 1;
+                                    break;
+                            }
+
+                            updateInventoryUI();
                         }
                     }
                 }
-                
+
                 // 添加冷却时间
                 setTimeout(() => {
                     isBreakingBlock = false;
@@ -544,18 +577,18 @@
         function placeBlockWithDebounce() {
             if (!isPlacingBlock) {
                 isPlacingBlock = true;
-                
+
                 const raycaster = new THREE.Raycaster();
                 // 设置射线检测的长度为3个方块长度
                 raycaster.far = 3;
                 raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
-                
+
                 // 只检测视野范围内的方块
                 const visibleBlocks = blockReferences.filter(block => {
                     const distance = camera.position.distanceTo(block.position);
                     return distance < 5;
                 });
-                
+
                 const intersects = raycaster.intersectObjects(visibleBlocks);
 
                 if (intersects.length > 0) {
@@ -568,11 +601,35 @@
                     const z = Math.floor(point.z + normal.z * 0.5);
 
                     if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize && world[x][y][z] === blockTypes.air) {
-                        world[x][y][z] = blockTypes.stone;
-                        createBlock(x, y, z, blockTypes.stone);
+                        // 只能放置方块，不能放置道具1（矿镐）
+                        if (inventory.selectedIndex !== 0 && inventory.items[inventory.selectedIndex].count > 0) {
+                            // 根据当前选择的物品确定方块类型
+                            let blockTypeToPlace;
+                            switch (inventory.selectedIndex) {
+                                case 2: // 泥土
+                                    blockTypeToPlace = blockTypes.dirt;
+                                    break;
+                                case 3: // 石头
+                                    blockTypeToPlace = blockTypes.stone;
+                                    break;
+                                case 4: // 木头
+                                    blockTypeToPlace = blockTypes.tree;
+                                    break;
+                                case 5: // 树叶
+                                    blockTypeToPlace = blockTypes.leaves;
+                                    break;
+                                default:
+                                    blockTypeToPlace = blockTypes.stone; // 默认为石头
+                            }
+                            
+                            world[x][y][z] = blockTypeToPlace;
+                            createBlock(x, y, z, blockTypeToPlace);
+                            inventory.items[inventory.selectedIndex].count -= 1;
+                            updateInventoryUI();
+                        }
                     }
                 }
-                
+
                 // 添加冷却时间
                 setTimeout(() => {
                     isPlacingBlock = false;
@@ -582,7 +639,7 @@
 
         // 移除测试按键，只保留必要的键盘事件处理程序
         document.addEventListener('keydown', (event) => {
-            if (event.key >= '1' && event.key <= '5') {
+            if (event.key >= '1' && event.key <= '8') {
                 const index = parseInt(event.key) - 1;
                 if (index >= 0 && index < inventory.items.length) {
                     inventory.selectedIndex = index;
@@ -597,11 +654,14 @@
         // 道具栏功能
         const inventory = {
             items: [
-                { name: 'pickaxe', texture: 'assets/images/pickaxe.png' },
-                { name: 'tnt', texture: 'assets/images/tnt-side.jpg' },
-                { name: 'empty', texture: '' },
-                { name: 'empty', texture: '' },
-                { name: 'empty', texture: '' }
+                { name: 'pickaxe', texture: 'assets/images/pickaxe.png', count: 1 },
+                { name: 'tnt', texture: 'assets/images/tnt-side.jpg', count: 0 },
+                { name: 'dirt', texture: 'assets/images/dirt.png', count: 0 },
+                { name: 'stone', texture: 'assets/images/stone.png', count: 0 },
+                { name: 'tree', texture: 'assets/images/tree.png', count: 0 },
+                { name: 'leaves', texture: 'assets/images/leaves.png', count: 0 },
+                { name: 'empty', texture: '', count: 0 },
+                { name: 'empty', texture: '', count: 0 }
             ],
             selectedIndex: 0
         };
@@ -625,6 +685,14 @@
                     slotElement.appendChild(itemElement);
                 }
 
+                // 添加数量显示
+                if (item.count > 0) {
+                    const countElement = document.createElement('div');
+                    countElement.className = 'item-count';
+                    countElement.textContent = `x${item.count}`;
+                    slotElement.appendChild(countElement);
+                }
+
                 slotElement.addEventListener('click', () => {
                     inventory.selectedIndex = index;
                     updateInventoryUI();
@@ -641,6 +709,19 @@
                 slot.classList.remove('selected');
                 if (index === inventory.selectedIndex) {
                     slot.classList.add('selected');
+                }
+
+                // 更新数量显示
+                const countElements = slot.getElementsByClassName('item-count');
+                if (countElements.length > 0) {
+                    slot.removeChild(countElements[0]);
+                }
+
+                if (inventory.items[index].count > 0) {
+                    const countElement = document.createElement('div');
+                    countElement.className = 'item-count';
+                    countElement.textContent = `x${inventory.items[index].count}`;
+                    slot.appendChild(countElement);
                 }
             });
         }
@@ -669,7 +750,7 @@
             lastFrameTime = currentTime;
 
             updateCamera();
-            
+
             // 优化：节流高亮方块的射线检测
             if (currentTime - lastRaycastTime > raycastInterval) {
                 highlightBlock();
