@@ -71,6 +71,7 @@
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const textureLoader = new THREE.TextureLoader();
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
@@ -88,6 +89,23 @@
         directionalLight.castShadow = true;
         scene.add(directionalLight);
 
+        // 加载天空纹理
+        const skyTexture = textureLoader.load('assets/images/sky.jpg');
+
+        // 创建天空球
+        function createSky() {
+            const geometry = new THREE.SphereGeometry(800, 128, 128); // 半径足够大，包围整个场景
+            const material = new THREE.MeshBasicMaterial({
+                map: skyTexture,
+                side: THREE.BackSide // 只渲染球体的内侧
+            });
+            const sky = new THREE.Mesh(geometry, material);
+            scene.add(sky);
+            return sky;
+        }
+
+        const sky = createSky();
+
         // 方块类型和纹理
         const blockTypes = {
             air: 0,
@@ -99,7 +117,6 @@
         };
 
         // 加载纹理
-        const textureLoader = new THREE.TextureLoader();
         const textures = {
             grass: textureLoader.load('assets/images/grass.png'),
             dirt: textureLoader.load('assets/images/dirt.png'),
