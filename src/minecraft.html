@@ -703,6 +703,9 @@
         // 创建角色
         character = createCharacter();
 
+        // 设置初始角色透明度（因为默认是第一人称视角）
+        setCharacterPartsOpacity(true);
+
         // 创建角色模型
         function createCharacter() {
             const character = {
@@ -1564,8 +1567,14 @@
                     const distanceToCamera = cameraPosition.distanceTo(block.position);
                     
                     // 应用距离裁剪和视锥剔除
-                    block.visible = distanceToCamera <= renderSettings.currentRenderDistance && 
-                                    isInViewFrustum(block.position);
+                    // 修改渲染条件：距离玩家6格以内的方块始终渲染，不考虑视锥
+                    const isNearPlayer = distanceToCamera <= 6;
+                    // 增加一个视锥外但在视锥边缘的判断
+                    const isNearFrustum = distanceToCamera <= 25 && 
+                                         lookDirection.dot(new THREE.Vector3().subVectors(block.position, cameraPosition).normalize()) > 0.5;
+                    
+                    block.visible = (isNearPlayer || isNearFrustum || isInViewFrustum(block.position)) && 
+                                   distanceToCamera <= renderSettings.currentRenderDistance;
                 });
             } else {
                 // 在俯视视角下，显示所有方块
@@ -1667,7 +1676,45 @@
         // 添加摄像机切换变量
         let activeCamera = camera; // 默认使用主摄像机
 
-        // 添加额外的键盘事件处理，用于切换摄像机
+        // 添加此函数来设置角色模型部件的透明度
+        function setCharacterPartsOpacity(isFirstPerson) {
+            if (!character) return;
+            
+            // 在第一人称视角下
+            if (isFirstPerson) {
+                // 将躯干和腿部完全隐藏
+                if (character.body) {
+                    character.body.visible = false;
+                }
+                if (character.leftLeg) {
+                    character.leftLeg.visible = false;
+                }
+                if (character.rightLeg) {
+                    character.rightLeg.visible = false;
+                }
+                // 头部也完全隐藏
+                if (character.head) {
+                    character.head.visible = false;
+                }
+            } else {
+                // 在俯视视角下恢复所有部件的可见性
+                if (character.body) {
+                    character.body.visible = true;
+                }
+                if (character.leftLeg) {
+                    character.leftLeg.visible = true;
+                }
+                if (character.rightLeg) {
+                    character.rightLeg.visible = true;
+                }
+                // 恢复头部的可见性
+                if (character.head) {
+                    character.head.visible = true;
+                }
+            }
+        }
+
+        // 修改摄像机切换代码
         document.addEventListener('keydown', (event) => {
             // 检测Ctrl+1和Ctrl+2组合键
             if (event.ctrlKey) {
@@ -1676,7 +1723,10 @@
                     activeCamera = camera;
                     console.log('切换到第一人称视角');
                     
-                    // 切换回第一人称时，重新应用视锥剔除
+                    // 设置角色部件透明度
+                    setCharacterPartsOpacity(true);
+                    
+                    // 切换回第一人称时，重新应用视锥
                     updateFrustum();
                     const cameraPosition = camera.position.clone();
                     blockReferences.forEach(block => {
@@ -1690,6 +1740,9 @@
                     // 切换到俯视摄像机
                     activeCamera = overviewCamera;
                     console.log('切换到俯视视角');
+                    
+                    // 恢复角色部件可见性
+                    setCharacterPartsOpacity(false);
                     
                     // 切换到俯视时，显示所有方块
                     blockReferences.forEach(block => {
