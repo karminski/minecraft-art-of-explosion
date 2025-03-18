@@ -35,6 +35,12 @@ import {
     initWorld
 } from './world.js';
 
+// 添加导入sky_and_light.js中的函数
+import {
+    createLighting,
+    createSky
+} from './sky_and_light.js';
+
 // 初始化场景、相机和渲染器
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -49,31 +55,10 @@ camera.position.y = 10;
 camera.position.z = 20;
 
 // 创建光源
-const ambientLight = new THREE.AmbientLight(0x404040);
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-directionalLight.position.set(100, 100, 50);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
-
-// 加载天空纹理
-const skyTexture = textureLoader.load('assets/images/sky.jpg');
+const { ambientLight, directionalLight } = createLighting(scene);
 
 // 创建天空球
-function createSky() {
-    const geometry = new THREE.SphereGeometry(800, 128, 128); // 半径足够大，包围整个场景
-    const material = new THREE.MeshBasicMaterial({
-        map: skyTexture,
-        side: THREE.BackSide // 只渲染球体的内侧
-    });
-    const sky = new THREE.Mesh(geometry, material);
-    sky.isSky = true; // 添加标记以便于识别
-    scene.add(sky);
-    return sky;
-}
-
-const sky = createSky();
+const sky = createSky(scene, textureLoader, 'assets/images/sky.jpg');
 
 // 初始化方块系统，替换直接定义的纹理和材质
 const { textures, materials, explosionTextures } = initBlockSystem(scene, textureLoader);
