@@ -95,11 +95,11 @@ function generateTerrain(world, worldSize, blockTypes) {
         for (let z = 0; z < worldSize; z++) {
             const height = heightMap[x][z];
 
-            // 生成地形块
-            for (let y = 0; y < height; y++) {
-                if (y === height - 1) {
+            // 修改这里：从y=1开始而不是y=0，保留底层的基岩
+            for (let y = 1; y < height + 1; y++) {
+                if (y === height) {
                     world[x][y][z] = blockTypes.grass;
-                } else if (y >= height - 3) { // 增加泥土层厚度，从最顶部往下3格
+                } else if (y >= height - 2) { // 泥土层厚度调整
                     world[x][y][z] = blockTypes.dirt;
                 } else {
                     world[x][y][z] = blockTypes.stone;
@@ -284,7 +284,7 @@ function initWorld(worldSize, blockTypes, renderCallback) {
         }
     }
     
-    // 生成地形
+    // 生成地形 - 现在地形生成从y=1开始，不会覆盖基岩
     generateTerrain(world, worldSize, blockTypes);
     
     // 生成树木
