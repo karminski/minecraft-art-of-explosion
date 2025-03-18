@@ -66,6 +66,11 @@ import {
     handleWindowResize
 } from './camera.js';
 
+// 添加导入animal.js中的函数
+import {
+    initAnimalSystem
+} from './animal.js';
+
 // 初始化场景、相机和渲染器
 const scene = new THREE.Scene();
 const camera = createMainCamera();
@@ -209,7 +214,17 @@ crosshairCtx.lineTo(20, 10);
 crosshairCtx.strokeStyle = 'white';
 crosshairCtx.stroke();
 
-// 在animate函数内更新视锥剔除逻辑
+// 在world初始化之后，动物系统初始化之前，添加这行代码
+// 将blockTypes添加到window对象，使animal.js可以访问
+window.blockTypes = blockTypes; 
+
+// 在世界初始化后，添加动物
+const animalSystem = initAnimalSystem(scene, world, worldSize);
+
+// 添加调试信息以确认动物系统初始化
+console.log("动物系统初始化完成", animalSystem);
+
+// 在animate函数内添加动物更新逻辑
 function animate(currentTime) {
     requestAnimationFrame(animate);
 
@@ -217,6 +232,13 @@ function animate(currentTime) {
     frameTime = currentTime - lastFrameTime;
     const fps = Math.round(1000 / frameTime);
     lastFrameTime = currentTime;
+
+    // 添加：更新动物系统（传递时间增量）
+    if (animalSystem && typeof animalSystem.update === 'function') {
+        animalSystem.update(frameTime / 1000 * 60);
+    } else {
+        console.error("动物系统或更新函数不存在!");
+    }
 
     updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys);
 
