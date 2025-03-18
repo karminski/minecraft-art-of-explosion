@@ -283,7 +283,7 @@ export function checkCollision(world, worldSize, position, direction, checkClimb
 }
 
 // 更新相机和角色位置
-export function updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, keys) {
+export function updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, keys, animals = null) {
     // 重力
     if (!checkCollision(world, worldSize, player.position, new THREE.Vector3(0, -1, 0))) {
         player.velocity.y -= player.gravity;
@@ -314,21 +314,45 @@ export function updateCamera(player, character, characterGroup, characterAnimati
 
     // 检测前方碰撞并支持攀爬
     const collisionResult = checkCollision(world, worldSize, player.position, direction, true);
+    
+    // 计算期望移动的新位置
+    const newPosX = player.position.x + direction.x * moveSpeed;
+    const newPosZ = player.position.z + direction.z * moveSpeed;
+    
+    // 检查与羊驼的碰撞
+    let llamaCollision = false;
+    if (animals && animals.llamas) {
+        for (const llama of animals.llamas) {
+            // 计算玩家与羊驼之间的距离
+            const distanceToLlama = Math.sqrt(
+                Math.pow(newPosX - llama.position.x, 2) + 
+                Math.pow(newPosZ - llama.position.z, 2)
+            );
+            
+            // 如果距离小于1.5个方块，认为发生碰撞
+            if (distanceToLlama < 1.5) {
+                llamaCollision = true;
+                break;
+            }
+        }
+    }
 
-    if (collisionResult === false) {
+    if (collisionResult === false && !llamaCollision) {
         // 没有碰撞，正常移动
         player.velocity.x = direction.x * moveSpeed;
         player.velocity.z = direction.z * moveSpeed;
-    } else if (collisionResult.canClimb === true) {
+    } else if (collisionResult && collisionResult.canClimb === true && !llamaCollision) {
         // 可以攀爬，调整Y轴位置并继续移动
         console.log("自动攀爬到方块上方");
         player.position.y = collisionResult.climbHeight + 0.5; // 站在方块上面
         player.velocity.x = direction.x * moveSpeed;
         player.velocity.z = direction.z * moveSpeed;
     } else {
-        // 无法攀爬，停止移动
-        if (collisionResult.tooHigh) {
+        // 无法攀爬或碰到羊驼，停止移动
+        if (collisionResult && collisionResult.tooHigh) {
             console.log("障碍物太高，无法攀爬");
+        } else if (llamaCollision) {
+            console.log("与羊驼发生碰撞，无法通过");
         }
         player.velocity.x = 0;
         player.velocity.z = 0;

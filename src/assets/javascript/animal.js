@@ -328,7 +328,7 @@ function animateLlamaLegs(llama, deltaTime) {
 }
 
 // 更新所有羊驼的位置(模拟重力、碰撞和随机移动)
-function updateLlamas(llamas, world, worldSize, deltaTime) {
+function updateLlamas(llamas, world, worldSize, deltaTime, player = null, animals = null) {
     // 防止deltaTime过大或为NaN
     if (isNaN(deltaTime) || deltaTime > 1000) {
         console.error(`无效的deltaTime: ${deltaTime}, 使用默认值`);
@@ -368,33 +368,40 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
         
         // 检查每条腿下方是否有方块
         let isCollidingWithGround = false;
-        const legY = Math.floor(llama.position.y - 0.8); // 腿部底端位置
+        let groundHeight = -1;
         
+        // 修改为先寻找所有腿下的最高点，然后设置统一高度，避免抖动
         for (const offset of rotatedLegOffsets) {
             const legX = Math.floor(llama.position.x + offset.x * llama.scale.x);
             const legZ = Math.floor(llama.position.z + offset.z * llama.scale.z);
             
             // 如果出现任何NaN坐标，跳过这一条腿的检查
-            if (isNaN(legX) || isNaN(legY) || isNaN(legZ)) {
+            if (isNaN(legX) || isNaN(legZ)) {
                 continue;
             }
             
-            // 安全地检查是否在世界边界内
-            const inBounds = (
-                legX >= 0 && legX < worldSize && 
-                legY >= 0 && legY < worldSize && 
-                legZ >= 0 && legZ < worldSize
-            );
-            
-            if (inBounds) {
-                try {
-                    // 检查腿部下方的方块
-                    if (world[legX][legY][legZ] !== window.blockTypes.air) {
-                        isCollidingWithGround = true;
-                        break; // 只要有一条腿碰到地面就可以
+            // 检查腿下方的几个方块，找出最高的地面
+            for (let checkY = Math.floor(llama.position.y - 1); checkY >= 0 && checkY >= Math.floor(llama.position.y) - 3; checkY--) {
+                // 安全地检查是否在世界边界内
+                const inBounds = (
+                    legX >= 0 && legX < worldSize && 
+                    checkY >= 0 && checkY < worldSize && 
+                    legZ >= 0 && legZ < worldSize
+                );
+                
+                if (inBounds) {
+                    try {
+                        // 检查腿部下方的方块
+                        if (world[legX][checkY][legZ] !== window.blockTypes.air && 
+                            world[legX][checkY][legZ] !== window.blockTypes.leaves) {
+                            isCollidingWithGround = true;
+                            const thisHeight = checkY + 1 + 0.8; // 方块高度 + 腿部长度
+                            groundHeight = Math.max(groundHeight, thisHeight);
+                            break; // 找到了这条腿下的地面，不需要继续向下检查
+                        }
+                    } catch (e) {
+                        console.error(`访问世界数组错误: x=${legX}, y=${checkY}, z=${legZ}`, e);
                     }
-                } catch (e) {
-                    console.error(`访问世界数组错误: x=${legX}, y=${legY}, z=${legZ}`, e);
                 }
             }
         }
@@ -411,8 +418,11 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
         } else {
             // 碰到地面，停止下落
             llama.velocity.y = 0;
-            // 确保正好站在方块顶部，考虑到腿部长度
-            llama.position.y = legY + 1 + 0.8; // 方块高度 + 腿部长度
+            // 确保正好站在方块顶部，统一高度避免抖动
+            if (groundHeight > 0) {
+                // 平滑过渡到正确的高度，避免突变引起的抖动
+                llama.position.y = llama.position.y * 0.5 + groundHeight * 0.5;
+            }
             llama.isGrounded = true;
         }
         
@@ -424,8 +434,8 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
             llama.velocity.y = 0;
         }
         
-        // 应用随机移动
-        moveAnimalRandomly(llama, deltaTime, world, worldSize);
+        // 应用随机移动，传入player和animals参数用于碰撞检测
+        moveAnimalRandomly(llama, deltaTime, world, worldSize, player, animals);
         
         // 添加动画更新
         animateLlamaLegs(llama, deltaTime);
@@ -438,12 +448,12 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
     });
 }
 
-// 修改随机移动函数，确保碰撞后的方向变化与前面的逻辑一致
-function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
+// 修改随机移动函数，使动物转向更自然
+function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, animals = null) {
     // 如果动物没有移动相关属性，初始化它们
     if (!animal.moveProps) {
         animal.moveProps = {
-            // 移动状态: idle, walking
+            // 移动状态: idle, walking, turning
             state: 'idle',
             // 移动方向
             direction: new THREE.Vector3(0, 0, 0),
@@ -456,7 +466,13 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
             // 移动速度 (每毫秒移动的单位)
             speed: animal.defaultSpeed || 0.001,
             // 方向改变的最小间隔 (毫秒)
-            directionChangeInterval: 500
+            directionChangeInterval: 500,
+            // 新增：目标旋转角度
+            targetRotation: 0,
+            // 新增：当前转向持续时间
+            turningTimeRemaining: 0,
+            // 新增：转向速度 (弧度/毫秒)
+            turningSpeed: 0.005
         };
     }
     
@@ -485,7 +501,38 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
             );
             
             // 更新动物朝向 - 反转角度使其面向前进方向
-            animal.rotation.y = angle + Math.PI *2; // 添加180度旋转
+            animal.rotation.y = angle + Math.PI * 2; // 添加360度旋转
+        }
+    } else if (props.state === 'turning') {
+        // 处理转向状态
+        props.turningTimeRemaining -= deltaTime;
+        
+        // 计算当前转向进度
+        const turningProgress = Math.min(1.0, 1.0 - props.turningTimeRemaining / 500);
+        
+        // 使用LERP平滑插值当前角度到目标角度
+        const currentY = animal.rotation.y;
+        let targetY = props.targetRotation;
+        
+        // 处理角度循环，选择最短的旋转路径
+        while (targetY - currentY > Math.PI) targetY -= Math.PI * 2;
+        while (targetY - currentY < -Math.PI) targetY += Math.PI * 2;
+        
+        // 应用平滑旋转
+        animal.rotation.y = currentY + (targetY - currentY) * turningProgress;
+        
+        // 转向完成后开始移动
+        if (props.turningTimeRemaining <= 0) {
+            // 确保方向向量与最终旋转角度一致
+            props.direction.set(
+                -Math.sin(props.targetRotation),
+                0,
+                -Math.cos(props.targetRotation)
+            );
+            
+            // 转向完成，切换回行走状态
+            props.state = 'walking';
+            props.moveTimeRemaining = 1000 + Math.random() * 1000; // 转向后移动1-2秒
         }
     } else if (props.state === 'walking') {
         props.moveTimeRemaining -= deltaTime;
@@ -517,21 +564,95 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
                 newPosZ < worldSize - boundaryMargin
             );
             
-            // 检测碰撞
+            // 增强的碰撞检测
             let hasCollision = false;
             if (inBounds) {
                 const floorX = Math.floor(newPosX);
                 const floorY = Math.floor(animal.position.y);
                 const floorZ = Math.floor(newPosZ);
                 
-                // 简单碰撞检测：检查前方是否有方块
-                if (floorY < worldSize - 1 && floorY >= 0) {
-                    try {
-                        hasCollision = world[floorX][floorY][floorZ] !== window.blockTypes.air ||
-                                      world[floorX][floorY + 1][floorZ] !== window.blockTypes.air;
-                    } catch (e) {
-                        console.error(`碰撞检测错误: x=${floorX}, y=${floorY}, z=${floorZ}`, e);
+                try {
+                    // 定义羊驼的高度范围 (从腿部到头部)
+                    // 羊驼缩放为0.4倍，总高度约为4个方块，需要检查的高度是地面以上3格
+                    const animalHeight = 3; 
+                    
+                    // 检测前方各个高度的方块
+                    for (let heightOffset = 0; heightOffset < animalHeight; heightOffset++) {
+                        const checkY = floorY + heightOffset;
+                        
+                        // 超出世界边界的不检测
+                        if (checkY >= worldSize || checkY < 0) continue;
+                        
+                        // 获取该位置的方块类型
+                        const blockType = world[floorX][checkY][floorZ];
+                        
+                        // 如果是空气或树叶，则继续检测更高的方块
+                        if (blockType === window.blockTypes.air || blockType === window.blockTypes.leaves) continue;
+                        
+                        // 如果是高度为1的方块并且在地面层，羊驼可以跨过
+                        if (heightOffset === 0 && isLowBlock(blockType)) {
+                            // 低矮方块不阻挡移动
+                            continue;
+                        }
+                        
+                        // 其他情况 (高于1的方块或高度位置不是地面层的方块) 视为碰撞
+                        hasCollision = true;
+                        break;
                     }
+                    
+                    // 额外检查头部高度的碰撞
+                    // 羊驼头部在前方，需要检查头部区域
+                    const headX = Math.floor(newPosX + props.direction.x * 0.8); // 头部前方位置
+                    const headZ = Math.floor(newPosZ + props.direction.z * 0.8);
+                    
+                    // 只有在边界内才检查
+                    if (headX >= 0 && headX < worldSize && headZ >= 0 && headZ < worldSize) {
+                        // 检查头部高度的方块
+                        const headY = floorY + 2; // 头部大约在地面以上2格高
+                        
+                        if (headY >= 0 && headY < worldSize &&
+                            world[headX][headY][headZ] !== window.blockTypes.air &&
+                            world[headX][headY][headZ] !== window.blockTypes.leaves) {
+                            hasCollision = true;
+                        }
+                    }
+                    
+                    // 检查与玩家的碰撞
+                    if (player) {
+                        const playerPos = player.position;
+                        
+                        // 使用简单的碰撞盒：距离小于1.5个方块
+                        const distanceToPlayer = Math.sqrt(
+                            Math.pow(newPosX - playerPos.x, 2) + 
+                            Math.pow(newPosZ - playerPos.z, 2)
+                        );
+                        
+                        if (distanceToPlayer < 1.5) {
+                            hasCollision = true;
+                        }
+                    }
+                    
+                    // 检查与其他羊驼的碰撞
+                    if (animals && animals.llamas) {
+                        for (const otherLlama of animals.llamas) {
+                            // 不要与自己碰撞检测
+                            if (otherLlama === animal) continue;
+                            
+                            // 检查与其他羊驼的距离
+                            const distanceToLlama = Math.sqrt(
+                                Math.pow(newPosX - otherLlama.position.x, 2) + 
+                                Math.pow(newPosZ - otherLlama.position.z, 2)
+                            );
+                            
+                            // 如果太近，视为碰撞
+                            if (distanceToLlama < 1.2) {
+                                hasCollision = true;
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error(`碰撞检测错误: x=${floorX}, y=${floorY}, z=${floorZ}`, e);
                 }
             }
             
@@ -540,19 +661,49 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
                 animal.position.x = newPosX;
                 animal.position.z = newPosZ;
             } else {
-                // 如果发生碰撞或超出边界，改变方向
-                const newAngle = Math.random() * Math.PI * 2;
-                // 修改：保持与上面相同的反转逻辑
-                props.direction.set(
-                    -Math.sin(newAngle),
-                    0,
-                    -Math.cos(newAngle)
-                );
-                // 修改：保持与上面相同的旋转逻辑
-                animal.rotation.y = newAngle + Math.PI;
+                // 如果发生碰撞或超出边界，进入转向状态
+                
+                // 计算新的前进方向 - 不直接向后转，而是向左或向右避开障碍物
+                // 获取当前前进方向角度
+                const currentAngle = animal.rotation.y;
+                
+                // 计算一个避免向后的新角度 (左转或右转70-110度)
+                const turnLeft = Math.random() > 0.5;
+                const turnAngle = (Math.PI / 2) * (0.8 + Math.random() * 0.4); // 70-110度的转向角
+                let newAngle;
+                
+                if (turnLeft) {
+                    newAngle = currentAngle + turnAngle;
+                } else {
+                    newAngle = currentAngle - turnAngle;
+                }
+                
+                // 规范化角度到0-2π范围
+                while (newAngle < 0) newAngle += Math.PI * 2;
+                while (newAngle >= Math.PI * 2) newAngle -= Math.PI * 2;
+                
+                // 设置转向目标和时间
+                props.targetRotation = newAngle;
+                props.turningTimeRemaining = 500; // 500毫秒完成转向
+                props.state = 'turning';
             }
         }
     }
+}
+
+// 辅助函数：判断方块是否为可以越过的低矮方块(高度为1)
+function isLowBlock(blockType) {
+    // 定义所有高度为1的方块类型
+    const lowBlocks = [
+        window.blockTypes.flower,
+        window.blockTypes.tallgrass,
+        window.blockTypes.redstoneTorch,
+        window.blockTypes.fire,
+        window.blockTypes.redstoneWire
+        // 可以添加其他高度为1的方块类型
+    ];
+    
+    return lowBlocks.includes(blockType);
 }
 
 // 初始化动物系统
@@ -584,9 +735,9 @@ function initAnimalSystem(scene, world, worldSize, textureLoader) {
     // 返回包含更新函数的对象
     return {
         animals: animals,
-        update: function(deltaTime) {
+        update: function(deltaTime, player = null) {
             try {
-                updateLlamas(animals.llamas, world, worldSize, deltaTime);
+                updateLlamas(animals.llamas, world, worldSize, deltaTime, player, animals);
             } catch (e) {
                 console.error("更新羊驼时发生错误:", e);
             }

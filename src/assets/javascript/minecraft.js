@@ -244,12 +244,12 @@ function animate(currentTime) {
     
     // 添加：更新动物系统（传递时间增量）
     if (animalSystem && typeof animalSystem.update === 'function') {
-        animalSystem.update(animalDeltaTime);
+        animalSystem.update(animalDeltaTime, player);
     } else {
         console.error("动物系统或更新函数不存在!");
     }
 
-    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys);
+    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys, animalSystem.animals);
 
     // 只有在第一人称视角时才应用视锥剔除和距离裁剪
     let lookDirection;
