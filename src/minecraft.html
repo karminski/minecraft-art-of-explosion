@@ -494,7 +494,7 @@
                 for (let x = 1; x < worldSize - 1; x++) {
                     for (let z = 1; z < worldSize - 1; z++) {
                         // 有10%的概率在平坦区域创建小山丘或洼地
-                        if (Math.random() < 0.1) {
+                        if (Math.random() < 0.3) {
                             const currentHeight = heightMap[x][z];
                             const neighborAvg = (heightMap[x-1][z] + heightMap[x+1][z] + 
                                                  heightMap[x][z-1] + heightMap[x][z+1]) / 4;
@@ -890,15 +890,15 @@
         function updateFaceUVs(uvAttribute, startIndex, uvCoords) {
             const [u1, v1, u2, v2] = uvCoords;
             
-            // 四个顶点的UV坐标
-            // 左下
-            uvAttribute.setXY(startIndex, u1, v2);
-            // 左上
-            uvAttribute.setXY(startIndex + 1, u1, v1);
-            // 右上
-            uvAttribute.setXY(startIndex + 2, u2, v1);
+            // 四个顶点的UV坐标 - 最终修正
             // 右下
-            uvAttribute.setXY(startIndex + 3, u2, v2);
+            uvAttribute.setXY(startIndex, u1, v1);     // 左上UV - 正确
+            // 右上
+            uvAttribute.setXY(startIndex + 1, u2, v1); // 右上UV - 修正
+            // 左上
+            uvAttribute.setXY(startIndex + 2, u1, v2); // 左下UV - 正确
+            // 左下
+            uvAttribute.setXY(startIndex + 3, u2, v2); // 右下UV - 修正
         }
 
         // 鼠标控制
