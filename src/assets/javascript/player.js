@@ -323,14 +323,20 @@ export function updateCamera(player, character, characterGroup, characterAnimati
     let llamaCollision = false;
     if (animals && animals.llamas) {
         for (const llama of animals.llamas) {
-            // 计算玩家与羊驼之间的距离
-            const distanceToLlama = Math.sqrt(
+            // 计算玩家与羊驼之间的水平距离
+            const horizontalDistance = Math.sqrt(
                 Math.pow(newPosX - llama.position.x, 2) + 
                 Math.pow(newPosZ - llama.position.z, 2)
             );
             
-            // 如果距离小于1.5个方块，认为发生碰撞
-            if (distanceToLlama < 1.5) {
+            // 计算玩家与羊驼之间的垂直距离
+            const verticalDistance = player.position.y - llama.position.y;
+            
+            // 羊驼的估计高度 (通常为1.8个方块)
+            const llamaHeight = 1.8;
+            
+            // 如果水平距离小于1.5个方块，且玩家底部低于羊驼顶部，才认为碰撞
+            if (horizontalDistance < 1.5 && verticalDistance < llamaHeight) {
                 llamaCollision = true;
                 break;
             }
@@ -348,14 +354,15 @@ export function updateCamera(player, character, characterGroup, characterAnimati
         player.velocity.x = direction.x * moveSpeed;
         player.velocity.z = direction.z * moveSpeed;
     } else {
-        // 无法攀爬或碰到羊驼，停止移动
+        // 无法攀爬或碰到羊驼，停止水平移动但仍允许跳跃
         if (collisionResult && collisionResult.tooHigh) {
             console.log("障碍物太高，无法攀爬");
         } else if (llamaCollision) {
-            console.log("与羊驼发生碰撞，无法通过");
+            console.log("与羊驼发生碰撞，无法通过，但可以跳跃");
         }
         player.velocity.x = 0;
         player.velocity.z = 0;
+        // 注意：这里不影响player.velocity.y，保持跳跃能力
     }
 
     // 更新位置
