@@ -277,6 +277,13 @@ function initWorld(worldSize, blockTypes, renderCallback) {
     // 创建世界数组
     const world = createWorld(worldSize, blockTypes.air);
     
+    // 添加基岩层 - 在最底层 (y=0) 生成一层基岩
+    for (let x = 0; x < worldSize; x++) {
+        for (let z = 0; z < worldSize; z++) {
+            world[x][0][z] = blockTypes.bedrock; // 将底层全部设为基岩
+        }
+    }
+    
     // 生成地形
     generateTerrain(world, worldSize, blockTypes);
     

@@ -115,52 +115,14 @@ function createLlamaModel(scene, textureLoader) {
     const legBackLeft = createLeg(-0.5, 1.2);
     const legBackRight = createLeg(0.5, 1.2);
     
-    // 箱子 (基于45, 28和45, 41区域的纹理, 8x8x3大小)
-    const chest1Geometry = new THREE.BoxGeometry(0.6, 1.6, 1.6);
-    mapBlockUVs(chest1Geometry, {
-        top: [45/128, 1 - 28/64, 53/128, 1 - 31/64],
-        bottom: [53/128, 1 - 28/64, 61/128, 1 - 31/64],
-        front: [45/128, 1 - 31/64, 53/128, 1 - 39/64],
-        back: [61/128, 1 - 31/64, 69/128, 1 - 39/64],
-        right: [53/128, 1 - 31/64, 61/128, 1 - 39/64],
-        left: [69/128, 1 - 31/64, 77/128, 1 - 39/64]
-    });
-    const chest1 = new THREE.Mesh(chest1Geometry, woolMaterial);
-    chest1.position.set(-1.7, 0.6, 0.6);
-    chest1.rotation.y = Math.PI / 2;
-    chest1.visible = false;
-    
-    const chest2Geometry = new THREE.BoxGeometry(0.6, 1.6, 1.6);
-    mapBlockUVs(chest2Geometry, {
-        top: [45/128, 1 - 41/64, 53/128, 1 - 44/64],
-        bottom: [53/128, 1 - 41/64, 61/128, 1 - 44/64],
-        front: [45/128, 1 - 44/64, 53/128, 1 - 52/64],
-        back: [61/128, 1 - 44/64, 69/128, 1 - 52/64],
-        right: [53/128, 1 - 44/64, 61/128, 1 - 52/64],
-        left: [69/128, 1 - 44/64, 77/128, 1 - 52/64]
-    });
-    const chest2 = new THREE.Mesh(chest2Geometry, woolMaterial);
-    chest2.position.set(1.7, 0.6, 0.6);
-    chest2.rotation.y = Math.PI / 2;
-    chest2.visible = false;
     
     // 添加所有部分到羊驼组
-    llamaGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight, chest1, chest2);
+    llamaGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight);
     
     // 设置整体比例和位置
     llamaGroup.scale.set(0.4, 0.4, 0.4); // 调整为游戏比例
     llamaGroup.position.y = 0.6;
     
-    // 添加更新方法以显示/隐藏箱子
-    llamaGroup.setHasChest = function(hasChest) {
-        chest1.visible = hasChest;
-        chest2.visible = hasChest;
-    };
-    
-    // 随机决定是否有箱子 (25%几率)
-    if (Math.random() < 0.25) {
-        llamaGroup.setHasChest(true);
-    }
     
     // 添加默认移动速度 - 增加速度
     llamaGroup.defaultSpeed = 0.005; // 提高速度，原来是0.0015
@@ -179,7 +141,7 @@ function createLlamaModel(scene, textureLoader) {
 function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
     const llamas = [];
     // 减少生成数量，便于调试
-    const count = 3; // 固定生成3只进行测试
+    const count = 10; // 固定生成3只进行测试
     
     console.log(`尝试生成 ${count} 只羊驼...`);
     console.log(`世界大小: ${worldSize}`);
@@ -283,6 +245,9 @@ function findLlamaSpawnHeight(world, x, z, worldSize) {
 
 // 修改腿部动画函数，更新查找腿部的条件以匹配实际位置
 function animateLlamaLegs(llama, deltaTime) {
+    // 如果羊驼被标记为暂停动画，则跳过动画更新
+    if (llama.pauseAnimation) return;
+    
     // 如果羊驼正在移动
     if (llama.moveProps && llama.moveProps.state === 'walking') {
         // 更新动画计时器
@@ -395,7 +360,14 @@ function updateLlamas(llamas, world, worldSize, deltaTime, player = null, animal
                         if (world[legX][checkY][legZ] !== window.blockTypes.air && 
                             world[legX][checkY][legZ] !== window.blockTypes.leaves) {
                             isCollidingWithGround = true;
-                            const thisHeight = checkY + 1 + 0.8; // 方块高度 + 腿部长度
+                            
+                            // 修正：调整羊驼站立高度计算
+                            // 原来使用 checkY + 1 + 0.8，这可能导致腿部陷入方块
+                            // 羊驼模型缩放为0.4，腿部高度约为2.8 * 0.4 = 1.12格
+                            // 考虑到腿部位置在-0.4，实际腿部底端距离羊驼中心约为 1.12 + 0.4 = 1.52格
+                            // 所以我们需要设置羊驼中心高度为 方块顶面 + 腿部长度一半
+                            const thisHeight = checkY + 1 + 1.25; // 方块顶面高度 + 足够腿部高度的偏移
+                            
                             groundHeight = Math.max(groundHeight, thisHeight);
                             break; // 找到了这条腿下的地面，不需要继续向下检查
                         }
@@ -420,8 +392,9 @@ function updateLlamas(llamas, world, worldSize, deltaTime, player = null, animal
             llama.velocity.y = 0;
             // 确保正好站在方块顶部，统一高度避免抖动
             if (groundHeight > 0) {
-                // 平滑过渡到正确的高度，避免突变引起的抖动
-                llama.position.y = llama.position.y * 0.5 + groundHeight * 0.5;
+                // 平滑过渡到正确的高度，但增加目标高度的权重确保羊驼不会下沉
+                // 从原来的0.5:0.5调整为0.3:0.7，让羊驼更快地达到目标高度
+                llama.position.y = llama.position.y * 0.3 + groundHeight * 0.7;
             }
             llama.isGrounded = true;
         }

@@ -6,7 +6,8 @@ const blockTypes = {
     stone: 3,
     tree: 4,
     leaves: 5,
-    tnt: 6
+    tnt: 6,
+    bedrock: 7  // 添加基岩类型
 };
 
 // 存储TNT定时器
@@ -23,7 +24,8 @@ function initBlockSystem(scene, textureLoader) {
         leaves: textureLoader.load('assets/images/leaves.png'),
         tntTop: textureLoader.load('assets/images/tnt-top.png'),
         tntSide: textureLoader.load('assets/images/tnt-side.jpg'),
-        tntBottom: textureLoader.load('assets/images/tnt-bottom.png')
+        tntBottom: textureLoader.load('assets/images/tnt-bottom.png'),
+        bedrock: textureLoader.load('assets/images/bedrock.png')  // 添加基岩纹理
     };
 
     // 预加载爆炸动画序列帧
@@ -44,7 +46,8 @@ function initBlockSystem(scene, textureLoader) {
             map: textures.tntSide,
             color: 0x8b4513,
             side: THREE.DoubleSide
-        })
+        }),
+        bedrock: new THREE.MeshPhongMaterial({ map: textures.bedrock, color: 0x333333 })  // 添加基岩材质
     };
 
     return { textures, materials, explosionTextures };
@@ -195,6 +198,11 @@ function breakBlock(scene, world, blockReferences, camera, inventory, blockTypes
         const z = block.blockZ;
 
         if (x >= 0 && x < world.length && y >= 0 && y < world.length && z >= 0 && z < world.length) {
+            // 检查是否为基岩，如果是则不能破坏
+            if (block.type === blockTypes.bedrock) {
+                return; // 基岩不可破坏，直接返回
+            }
+
             // 只有使用道具1（矿镐）才能挖掘方块
             if (inventory.selectedIndex === 0) {
                 world[x][y][z] = blockTypes.air;
@@ -533,8 +541,9 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
 
                     // 只有在球体范围内的方块才会被爆炸影响
                     if (distance <= effectiveRadius) {
-                        // 如果是石头方块，则不移除（免疫TNT）
-                        if (world[blockX][blockY][blockZ] === blockTypes.stone) {
+                        // 检查是否为基岩或石头，这些方块不受爆炸影响
+                        if (world[blockX][blockY][blockZ] === blockTypes.stone ||
+                            world[blockX][blockY][blockZ] === blockTypes.bedrock) {
                             continue;
                         }
 

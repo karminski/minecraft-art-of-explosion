@@ -190,9 +190,9 @@ document.addEventListener('keydown', (event) => {
             inventory.selectedIndex = index;
             updateInventoryUI(character, blockTypes, textures, materials);
         }
-    } else if (event.key === 'm' && !mouseLock) {
-        mouseLock = true;
-        document.body.requestPointerLock();
+    } else if (event.key === 'm' && !controlsState.mouseLock) {
+        controlsState.mouseLock = true;
+        document.documentElement.requestPointerLock();
     }
 });
 
@@ -254,7 +254,7 @@ function animate(currentTime) {
     // 只有在第一人称视角时才应用视锥剔除和距离裁剪
     let lookDirection;
     if (activeCamera === camera) {
-        lookDirection = applyFrustumCulling(camera, blockReferences, frustumSystem, renderSettings);
+        lookDirection = applyFrustumCulling(camera, blockReferences, frustumSystem, renderSettings, animalSystem.animals);
     } else {
         // 在俯视视角下，显示所有方块
         blockReferences.forEach(block => {

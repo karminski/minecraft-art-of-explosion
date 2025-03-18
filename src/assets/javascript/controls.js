@@ -57,24 +57,56 @@ function setupKeyboardControls(controlsState, document) {
 
 // 设置鼠标锁定
 function setupMouseLock(controlsState, document) {
+    // 创建一个变量追踪是否正在请求锁定，防止重复请求
+    let isRequestingLock = false;
+    
+    // 请求指针锁定的函数
+    const requestLock = () => {
+        if (!controlsState.mouseLock && !isRequestingLock) {
+            isRequestingLock = true;
+            
+            document.documentElement.requestPointerLock()
+                .then(() => {
+                    // 锁定成功
+                    controlsState.mouseLock = true;
+                    console.log("指针锁定成功");
+                })
+                .catch(error => {
+                    // 锁定失败，记录错误但不阻止游戏
+                    console.warn("指针锁定失败:", error);
+                })
+                .finally(() => {
+                    isRequestingLock = false;
+                });
+        }
+    };
+    
+    // 监听点击事件进行锁定
+    document.addEventListener('click', requestLock);
+    
+    // 监听键盘事件 (M键) 进行锁定
     document.addEventListener('keydown', (event) => {
         if (event.key === 'm' && !controlsState.mouseLock) {
-            controlsState.mouseLock = true;
-            document.body.requestPointerLock();
+            requestLock();
         }
     });
 
+    // 监听锁定状态变化
     document.addEventListener('pointerlockchange', () => {
-        controlsState.mouseLock = document.pointerLockElement === document.body;
+        // 直接根据document.pointerLockElement更新状态
+        controlsState.mouseLock = document.pointerLockElement !== null;
         
-        // 如果鼠标解锁了，添加点击事件重新锁定
+        // 如果锁定被解除，下次点击时重新锁定
         if (!controlsState.mouseLock) {
-            const clickToLock = () => {
-                document.body.requestPointerLock();
-                document.removeEventListener('click', clickToLock);
-            };
-            document.addEventListener('click', clickToLock);
+            console.log("指针锁定已解除");
         }
+    });
+    
+    // 监听锁定错误
+    document.addEventListener('pointerlockerror', (event) => {
+        console.error("指针锁定错误:", event);
+        isRequestingLock = false;
+        controlsState.mouseLock = false;
     });
 }
 
@@ -188,14 +220,18 @@ function handleMouseActions(controlsState, scene, world, blockReferences, camera
     }
 }
 
-// 初始化页面加载时的鼠标锁定
+// 初始化页面加载时的鼠标锁定 - 简化此函数，避免与上面的setupMouseLock冲突
 function initPageLoadMouseLock(window) {
-    window.addEventListener('load', () => {
-        // 在页面加载后稍微延迟锁定，以确保所有资源都已加载
-        setTimeout(() => {
-            document.body.requestPointerLock();
-        }, 1000);
-    });
+    // 不再自动尝试锁定鼠标，仅添加提示信息
+    console.log("游戏已加载，点击屏幕以锁定鼠标并开始游戏");
+    
+    // 移除这部分代码，因为已经在setupMouseLock中处理了点击锁定
+    // const canvas = document.querySelector('canvas');
+    // if (canvas) {
+    //     canvas.addEventListener('click', () => {
+    //         document.documentElement.requestPointerLock();
+    //     });
+    // }
 }
 
 // 导出所有控制函数
