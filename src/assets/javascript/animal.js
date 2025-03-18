@@ -1,12 +1,18 @@
 // 导入Three.js库（假设已在全局范围内）
 // import * as THREE from 'three';
+import { mapBlockUVs, createAnimalTexture } from './utils.js';
 
 // 羊驼模型创建函数
-function createLlamaModel() {
+function createLlamaModel(scene, textureLoader) {
     const llamaGroup = new THREE.Group();
     
+    // 随机选择一种羊驼纹理
+    const llamaColors = ['brown', 'creamy', 'gray', 'white'];
+    const randomColor = llamaColors[Math.floor(Math.random() * llamaColors.length)];
+    const texturePath = `assets/images/llama/${randomColor}.png`;
+    
     // 创建材质
-    const llamaMaterial = new THREE.MeshLambertMaterial({ color: 0xDDCCAA }); // 浅棕色
+    const llamaMaterial = createAnimalTexture(textureLoader, texturePath);
     const woolMaterial = new THREE.MeshLambertMaterial({ color: 0xEEEEDD }); // 更浅色的毛皮
     
     // 基于Minecraft的ModelQuadruped和ModelLlama重新构建
@@ -14,31 +20,57 @@ function createLlamaModel() {
     const head = new THREE.Group();
     
     // 主吻部 (基于0, 0区域的纹理，4x4x9大小)
-    const snout = new THREE.Mesh(
-        new THREE.BoxGeometry(0.8, 0.8, 0.8),
-        llamaMaterial
-    );
-    snout.position.set(0, 0, -1.0);
+    const snoutGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+    // 设置吻部UV映射 - 根据ModelLlama.java中的纹理坐标
+    mapBlockUVs(snoutGeometry, {
+        top: [9/128, 1 - 5/64, 13/128, 1 - 9/64],
+        bottom: [13/128, 1 - 5/64, 17/128, 1 - 9/64],
+        front: [9/128, 1 - 9/64, 13/128, 1 - 13/64],
+        back: [12/128, 1 - 4/64, 17/128, 1 - 9/64],
+        right: [5 / 128, 1 - 9 / 64, 9 / 128, 1 - 13 / 64],
+        left: [13 / 128, 1 - 9 / 64, 17 / 128, 1 - 13 / 64]
+    });
+    const snout = new THREE.Mesh(snoutGeometry, llamaMaterial);
+    snout.position.set(0, 0.2, -1.0);
     
     // 主要头部 (基于0, 14区域的纹理，8x18x6大小)
-    const headMain = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 3.2, 1.2),
-        llamaMaterial
-    );
+    const headMainGeometry = new THREE.BoxGeometry(1.6, 3.2, 1.2);
+    // 设置头部UV映射
+    mapBlockUVs(headMainGeometry, {
+        top: [13/128, 1 - 19/64, 7/128, 1 - 15/64],
+        bottom: [14/128, 1 - 14/64, 22/128, 1 - 20/64],
+        front: [6/128, 1 - 20/64, 14/128, 1 - 38/64],
+        back: [14/128, 1 - 20/64, 22/128, 1 - 38/64],
+        right: [22/128, 1 - 20/64, 28/128, 1 - 38/64],
+        left: [0/128, 1 - 20/64, 6/128, 1 - 38/64]
+    });
+    const headMain = new THREE.Mesh(headMainGeometry, llamaMaterial);
     headMain.position.set(0, -0.6, 0);
     
     // 左耳 (基于17, 0区域的纹理, 3x3x2大小)
-    const leftEar = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 0.6, 0.4),
-        llamaMaterial
-    );
+    const leftEarGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.4);
+    mapBlockUVs(leftEarGeometry, {
+        top: [19/128, 1 - 0/64, 22/128, 1 - 2/64],
+        bottom: [22/128, 1 - 0/64, 25/128, 1 - 2/64],
+        front: [19/128, 1 - 2/64, 22/128, 1 - 5/64],
+        back: [22/128, 1 - 2/64, 25/128, 1 - 5/64],
+        right: [25/128, 1 - 2/64, 27/128, 1 - 5/64],
+        left: [17/128, 1 - 2/64, 19/128, 1 - 5/64]
+    });
+    const leftEar = new THREE.Mesh(leftEarGeometry, llamaMaterial);
     leftEar.position.set(-0.5, 1.2, 0.0);
     
     // 右耳 (同左耳)
-    const rightEar = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 0.6, 0.4),
-        llamaMaterial
-    );
+    const rightEarGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.4);
+    mapBlockUVs(rightEarGeometry, {
+        top: [19/128, 1 - 0/64, 22/128, 1 - 2/64],
+        bottom: [22/128, 1 - 0/64, 25/128, 1 - 2/64],
+        front: [19/128, 1 - 2/64, 22/128, 1 - 5/64],
+        back: [22/128, 1 - 2/64, 25/128, 1 - 5/64],
+        right: [25/128, 1 - 2/64, 27/128, 1 - 5/64],
+        left: [17/128, 1 - 2/64, 19/128, 1 - 5/64]
+    });
+    const rightEar = new THREE.Mesh(rightEarGeometry, llamaMaterial);
     rightEar.position.set(0.5, 1.2, 0.0);
     
     // 头部整体
@@ -46,20 +78,31 @@ function createLlamaModel() {
     head.position.set(0, 2.5, -2.0);
     
     // 身体 (基于29, 0区域的纹理，12x18x10大小)
-    // 注意：Minecraft中身体是垂直放置的（绕X轴旋转90度）
-    const body = new THREE.Mesh(
-        new THREE.BoxGeometry(2.4, 3.6, 2.0),
-        llamaMaterial
-    );
+    const bodyGeometry = new THREE.BoxGeometry(2.4, 3.6, 2.0);
+    mapBlockUVs(bodyGeometry, {
+        top: [39/128, 1 - 10/64, 49/128, 1 - 28/64],
+        bottom: [49/128, 1 - 10/64, 63/128, 1 - 28/64],
+        front: [39/128, 1 - 0/64, 49/128, 1 - 10/64],
+        back: [50/128, 1 - 0/64, 63/128, 1 - 10/64],
+        right: [63/128, 1 - 10/64, 73/128, 1 - 28/64],
+        left: [29/128, 1 - 10/64, 39/128, 1 - 28/64]
+    });
+    const body = new THREE.Mesh(bodyGeometry, llamaMaterial);
     body.position.set(0, 0.5, 0);
     body.rotation.x = Math.PI / 2; // 关键！垂直放置身体
     
     // 腿部 (基于29, 29区域的纹理，每条腿4x14x4大小)
     function createLeg(x, z) {
-        const leg = new THREE.Mesh(
-            new THREE.BoxGeometry(0.8, 2.8, 0.8),
-            llamaMaterial
-        );
+        const legGeometry = new THREE.BoxGeometry(0.8, 2.8, 0.8);
+        mapBlockUVs(legGeometry, {
+            top: [33/128, 1 - 29/64, 37/128, 1 - 33/64],
+            bottom: [37/128, 1 - 29/64, 41/128, 1 - 33/64],
+            front: [33/128, 1 - 33/64, 37/128, 1 - 47/64],
+            back: [37/128, 1 - 33/64, 41/128, 1 - 47/64],
+            right: [41/128, 1 - 33/64, 45/128, 1 - 47/64],
+            left: [29/128, 1 - 33/64, 33/128, 1 - 47/64]
+        });
+        const leg = new THREE.Mesh(legGeometry, llamaMaterial);
         leg.position.set(x, -1.0, z);
         return leg;
     }
@@ -71,18 +114,30 @@ function createLlamaModel() {
     const legBackRight = createLeg(0.5, 1.2);
     
     // 箱子 (基于45, 28和45, 41区域的纹理, 8x8x3大小)
-    const chest1 = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 1.6, 1.6),
-        woolMaterial
-    );
+    const chest1Geometry = new THREE.BoxGeometry(0.6, 1.6, 1.6);
+    mapBlockUVs(chest1Geometry, {
+        top: [45/128, 1 - 28/64, 53/128, 1 - 31/64],
+        bottom: [53/128, 1 - 28/64, 61/128, 1 - 31/64],
+        front: [45/128, 1 - 31/64, 53/128, 1 - 39/64],
+        back: [61/128, 1 - 31/64, 69/128, 1 - 39/64],
+        right: [53/128, 1 - 31/64, 61/128, 1 - 39/64],
+        left: [69/128, 1 - 31/64, 77/128, 1 - 39/64]
+    });
+    const chest1 = new THREE.Mesh(chest1Geometry, woolMaterial);
     chest1.position.set(-1.7, 0.6, 0.6);
     chest1.rotation.y = Math.PI / 2;
     chest1.visible = false;
     
-    const chest2 = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 1.6, 1.6),
-        woolMaterial
-    );
+    const chest2Geometry = new THREE.BoxGeometry(0.6, 1.6, 1.6);
+    mapBlockUVs(chest2Geometry, {
+        top: [45/128, 1 - 41/64, 53/128, 1 - 44/64],
+        bottom: [53/128, 1 - 41/64, 61/128, 1 - 44/64],
+        front: [45/128, 1 - 44/64, 53/128, 1 - 52/64],
+        back: [61/128, 1 - 44/64, 69/128, 1 - 52/64],
+        right: [53/128, 1 - 44/64, 61/128, 1 - 52/64],
+        left: [69/128, 1 - 44/64, 77/128, 1 - 52/64]
+    });
+    const chest2 = new THREE.Mesh(chest2Geometry, woolMaterial);
     chest2.position.set(1.7, 0.6, 0.6);
     chest2.rotation.y = Math.PI / 2;
     chest2.visible = false;
@@ -100,11 +155,16 @@ function createLlamaModel() {
         chest2.visible = hasChest;
     };
     
+    // 随机决定是否有箱子 (25%几率)
+    if (Math.random() < 0.25) {
+        llamaGroup.setHasChest(true);
+    }
+    
     return llamaGroup;
 }
 
 // 在世界中随机放置羊驼
-function placeLlamasRandomly(scene, world, worldSize) {
+function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
     const llamas = [];
     // 减少生成数量，便于调试
     const count = 3; // 固定生成3只进行测试
@@ -115,8 +175,8 @@ function placeLlamasRandomly(scene, world, worldSize) {
     
     for (let i = 0; i < count; i++) {
         try {
-            // 创建一只新羊驼
-            const llama = createLlamaModel();
+            // 创建一只新羊驼，传入textureLoader
+            const llama = createLlamaModel(scene, textureLoader);
             
             // 指定固定位置进行测试
             // 使用世界中心区域生成
@@ -229,44 +289,56 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
             llama.velocity.set(0, 0, 0);
         }
         
-        // 检查羊驼下方是否有方块(碰撞检测)
-        const position = new THREE.Vector3().copy(llama.position);
-        const blockX = Math.floor(position.x);
-        const blockY = Math.floor(position.y - 0.5); // 检查脚下
-        const blockZ = Math.floor(position.z);
+        // 检查羊驼四条腿是否有任何一条与地面接触
+        // 定义四条腿的相对位置偏移（基于羊驼的局部坐标系）
+        const legOffsets = [
+            {x: -0.5, z: -0.8}, // 左前腿
+            {x: 0.5, z: -0.8},  // 右前腿
+            {x: -0.5, z: 1.2},  // 左后腿
+            {x: 0.5, z: 1.2}    // 右后腿
+        ];
         
-        // 如果出现任何NaN坐标，跳过这一帧的更新
-        if (isNaN(blockX) || isNaN(blockY) || isNaN(blockZ)) {
-            console.error(`羊驼方块坐标有NaN: x=${blockX}, y=${blockY}, z=${blockZ}, 跳过更新`);
-            return;
-        }
+        // 旋转腿部偏移以匹配羊驼的旋转
+        const rotatedLegOffsets = legOffsets.map(offset => {
+            const sin = Math.sin(llama.rotation.y);
+            const cos = Math.cos(llama.rotation.y);
+            return {
+                x: offset.x * cos - offset.z * sin,
+                z: offset.x * sin + offset.z * cos
+            };
+        });
         
-        // 安全地检查是否在世界边界内
-        const inBounds = (
-            blockX >= 0 && blockX < worldSize && 
-            blockY >= 0 && blockY < worldSize && 
-            blockZ >= 0 && blockZ < worldSize
-        );
-        
-        // 如果超出边界，重置到安全位置
-        if (!inBounds) {
-            console.log(`羊驼超出边界: x=${blockX}, y=${blockY}, z=${blockZ}`);
-            // 将羊驼移到安全位置
-            let safeY = Math.max(1, position.y);
-            if (isNaN(safeY)) safeY = 10; // 如果还是NaN，使用固定值
-            
-            llama.position.y = safeY;
-            llama.velocity.y = 0;
-            return;
-        }
-        
-        // 安全地访问世界数组
+        // 检查每条腿下方是否有方块
         let isCollidingWithGround = false;
-        try {
-            isCollidingWithGround = world[blockX][blockY][blockZ] !== window.blockTypes.air;
-        } catch (e) {
-            console.error(`访问世界数组错误: x=${blockX}, y=${blockY}, z=${blockZ}`, e);
-            return; // 跳过此羊驼的更新
+        const legY = Math.floor(llama.position.y - 0.8); // 腿部底端位置
+        
+        for (const offset of rotatedLegOffsets) {
+            const legX = Math.floor(llama.position.x + offset.x * llama.scale.x);
+            const legZ = Math.floor(llama.position.z + offset.z * llama.scale.z);
+            
+            // 如果出现任何NaN坐标，跳过这一条腿的检查
+            if (isNaN(legX) || isNaN(legY) || isNaN(legZ)) {
+                continue;
+            }
+            
+            // 安全地检查是否在世界边界内
+            const inBounds = (
+                legX >= 0 && legX < worldSize && 
+                legY >= 0 && legY < worldSize && 
+                legZ >= 0 && legZ < worldSize
+            );
+            
+            if (inBounds) {
+                try {
+                    // 检查腿部下方的方块
+                    if (world[legX][legY][legZ] !== window.blockTypes.air) {
+                        isCollidingWithGround = true;
+                        break; // 只要有一条腿碰到地面就可以
+                    }
+                } catch (e) {
+                    console.error(`访问世界数组错误: x=${legX}, y=${legY}, z=${legZ}`, e);
+                }
+            }
         }
         
         // 如果没有碰到地面，应用重力
@@ -280,8 +352,8 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
         } else {
             // 碰到地面，停止下落
             llama.velocity.y = 0;
-            // 确保正好站在方块顶部
-            llama.position.y = blockY + 1.5; // +1是方块高度，+0.5是羊驼中心点
+            // 确保正好站在方块顶部，考虑到腿部长度
+            llama.position.y = legY + 1 + 0.8; // 方块高度 + 腿部长度
             llama.isGrounded = true;
         }
         
@@ -302,7 +374,7 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
 }
 
 // 初始化动物系统
-function initAnimalSystem(scene, world, worldSize) {
+function initAnimalSystem(scene, world, worldSize, textureLoader) {
     console.log("正在初始化动物系统...");
     
     if (!window.blockTypes) {
@@ -318,7 +390,7 @@ function initAnimalSystem(scene, world, worldSize) {
     let animals;
     try {
         animals = {
-            llamas: placeLlamasRandomly(scene, world, worldSize)
+            llamas: placeLlamasRandomly(scene, world, worldSize, textureLoader)
         };
     } catch (e) {
         console.error("生成羊驼时发生错误:", e);

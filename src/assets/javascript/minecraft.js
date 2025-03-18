@@ -219,7 +219,7 @@ crosshairCtx.stroke();
 window.blockTypes = blockTypes; 
 
 // 在世界初始化后，添加动物
-const animalSystem = initAnimalSystem(scene, world, worldSize);
+const animalSystem = initAnimalSystem(scene, world, worldSize, textureLoader);
 
 // 添加调试信息以确认动物系统初始化
 console.log("动物系统初始化完成", animalSystem);

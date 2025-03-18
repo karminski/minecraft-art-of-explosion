@@ -1,5 +1,6 @@
 // 导入必要的模块
 import { updateInventoryUI, updateHeldItem } from './inventory.js';
+import { mapBlockUVs, updateFaceUVs, createAnimalTexture } from './utils.js';
 
 // 玩家对象工厂函数
 export function createPlayer(initialPosition) {
@@ -48,13 +49,13 @@ export function createCharacter(characterGroup, textureLoader) {
     // 创建头部 (1x1x1)
     const headGeometry = new THREE.BoxGeometry(1, 1, 1);
     // 设置头部的UV映射 - 修正V坐标顺序
-    mapSkinUVs(headGeometry, {
+    mapBlockUVs(headGeometry, {
         top: [8 / 64, 1 - 0 / 64, 16 / 64, 1 - 8 / 64],      // 头顶
-        bottom: [16 / 64, 1 - 0 / 64, 24 / 64, 1 - 8 / 64],     // 头底
-        front: [8 / 64, 1 - 8 / 64, 16 / 64, 1 - 16 / 64],     // 脸
-        back: [24 / 64, 1 - 8 / 64, 32 / 64, 1 - 16 / 64],    // 后脑勺
-        right: [0 / 64, 1 - 8 / 64, 8 / 64, 1 - 16 / 64],      // 右侧
-        left: [16 / 64, 1 - 8 / 64, 24 / 64, 1 - 16 / 64]     // 左侧
+        bottom: [16 / 64, 1 - 0 / 64, 24 / 64, 1 - 8 / 64],  // 头底
+        front: [8 / 64, 1 - 8 / 64, 16 / 64, 1 - 16 / 64],   // 脸
+        back: [24 / 64, 1 - 8 / 64, 32 / 64, 1 - 16 / 64],   // 后脑勺
+        right: [0 / 64, 1 - 8 / 64, 8 / 64, 1 - 16 / 64],    // 右侧
+        left: [16 / 64, 1 - 8 / 64, 24 / 64, 1 - 16 / 64]    // 左侧
     });
     const head = new THREE.Mesh(headGeometry, skinMaterial.clone());
     head.position.set(0, 2.5, 0); // 头顶位置
@@ -64,13 +65,13 @@ export function createCharacter(characterGroup, textureLoader) {
     // 创建躯干 (1x1.5x0.5)
     const bodyGeometry = new THREE.BoxGeometry(1, 1.5, 0.5);
     // 设置躯干的UV映射 - 修正V坐标顺序
-    mapSkinUVs(bodyGeometry, {
+    mapBlockUVs(bodyGeometry, {
         top: [20 / 64, 1 - 16 / 64, 28 / 64, 1 - 20 / 64],    // 上部
-        bottom: [28 / 64, 1 - 16 / 64, 36 / 64, 1 - 20 / 64],    // 下部
-        front: [20 / 64, 1 - 20 / 64, 28 / 64, 1 - 32 / 64],    // 正面
-        back: [32 / 64, 1 - 20 / 64, 40 / 64, 1 - 32 / 64],    // 背面
-        right: [16 / 64, 1 - 20 / 64, 20 / 64, 1 - 32 / 64],    // 右侧
-        left: [28 / 64, 1 - 20 / 64, 32 / 64, 1 - 32 / 64]     // 左侧
+        bottom: [28 / 64, 1 - 16 / 64, 36 / 64, 1 - 20 / 64], // 下部
+        front: [20 / 64, 1 - 20 / 64, 28 / 64, 1 - 32 / 64],  // 正面
+        back: [32 / 64, 1 - 20 / 64, 40 / 64, 1 - 32 / 64],   // 背面
+        right: [16 / 64, 1 - 20 / 64, 20 / 64, 1 - 32 / 64],  // 右侧
+        left: [28 / 64, 1 - 20 / 64, 32 / 64, 1 - 32 / 64]    // 左侧
     });
     const body = new THREE.Mesh(bodyGeometry, skinMaterial.clone());
     body.position.set(0, 1.25, 0);
@@ -81,13 +82,13 @@ export function createCharacter(characterGroup, textureLoader) {
     const leftArmGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
     leftArmGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
     // 设置左手臂的UV映射 - 修正V坐标顺序
-    mapSkinUVs(leftArmGeometry, {
+    mapBlockUVs(leftArmGeometry, {
         top: [44 / 64, 1 - 16 / 64, 48 / 64, 1 - 20 / 64],    // 上部
-        bottom: [48 / 64, 1 - 16 / 64, 52 / 64, 1 - 20 / 64],    // 下部
-        front: [44 / 64, 1 - 20 / 64, 48 / 64, 1 - 32 / 64],    // 正面
-        back: [52 / 64, 1 - 20 / 64, 56 / 64, 1 - 32 / 64],    // 背面
-        right: [40 / 64, 1 - 20 / 64, 44 / 64, 1 - 32 / 64],    // 右侧
-        left: [48 / 64, 1 - 20 / 64, 52 / 64, 1 - 32 / 64]     // 左侧
+        bottom: [48 / 64, 1 - 16 / 64, 52 / 64, 1 - 20 / 64], // 下部
+        front: [44 / 64, 1 - 20 / 64, 48 / 64, 1 - 32 / 64],  // 正面
+        back: [52 / 64, 1 - 20 / 64, 56 / 64, 1 - 32 / 64],   // 背面
+        right: [40 / 64, 1 - 20 / 64, 44 / 64, 1 - 32 / 64],  // 右侧
+        left: [48 / 64, 1 - 20 / 64, 52 / 64, 1 - 32 / 64]    // 左侧
     });
     const leftArm = new THREE.Mesh(leftArmGeometry, skinMaterial.clone());
     leftArm.position.set(-0.75, 2, 0);
@@ -98,13 +99,13 @@ export function createCharacter(characterGroup, textureLoader) {
     const rightArmGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
     rightArmGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
     // 设置右手臂的UV映射 - 修正V坐标顺序
-    mapSkinUVs(rightArmGeometry, {
+    mapBlockUVs(rightArmGeometry, {
         top: [44 / 64, 1 - 16 / 64, 48 / 64, 1 - 20 / 64],    // 上部
-        bottom: [48 / 64, 1 - 16 / 64, 52 / 64, 1 - 20 / 64],    // 下部
-        front: [44 / 64, 1 - 20 / 64, 48 / 64, 1 - 32 / 64],    // 正面
-        back: [52 / 64, 1 - 20 / 64, 56 / 64, 1 - 32 / 64],    // 背面
-        right: [40 / 64, 1 - 20 / 64, 44 / 64, 1 - 32 / 64],    // 右侧
-        left: [48 / 64, 1 - 20 / 64, 52 / 64, 1 - 32 / 64]     // 左侧
+        bottom: [48 / 64, 1 - 16 / 64, 52 / 64, 1 - 20 / 64], // 下部
+        front: [44 / 64, 1 - 20 / 64, 48 / 64, 1 - 32 / 64],  // 正面
+        back: [52 / 64, 1 - 20 / 64, 56 / 64, 1 - 32 / 64],   // 背面
+        right: [40 / 64, 1 - 20 / 64, 44 / 64, 1 - 32 / 64],  // 右侧
+        left: [48 / 64, 1 - 20 / 64, 52 / 64, 1 - 32 / 64]    // 左侧
     });
     const rightArm = new THREE.Mesh(rightArmGeometry, skinMaterial.clone());
     rightArm.position.set(0.75, 2, 0);
@@ -115,12 +116,12 @@ export function createCharacter(characterGroup, textureLoader) {
     const leftLegGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
     leftLegGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
     // 设置左腿的UV映射 - 修正V坐标顺序
-    mapSkinUVs(leftLegGeometry, {
+    mapBlockUVs(leftLegGeometry, {
         top: [4 / 64, 1 - 16 / 64, 8 / 64, 1 - 20 / 64],     // 上部
-        bottom: [8 / 64, 1 - 16 / 64, 12 / 64, 1 - 20 / 64],    // 下部
-        front: [4 / 64, 1 - 20 / 64, 8 / 64, 1 - 32 / 64],     // 正面
+        bottom: [8 / 64, 1 - 16 / 64, 12 / 64, 1 - 20 / 64],  // 下部
+        front: [4 / 64, 1 - 20 / 64, 8 / 64, 1 - 32 / 64],    // 正面
         back: [12 / 64, 1 - 20 / 64, 16 / 64, 1 - 32 / 64],   // 背面
-        right: [0 / 64, 1 - 20 / 64, 4 / 64, 1 - 32 / 64],     // 右侧
+        right: [0 / 64, 1 - 20 / 64, 4 / 64, 1 - 32 / 64],    // 右侧
         left: [8 / 64, 1 - 20 / 64, 12 / 64, 1 - 32 / 64]     // 左侧
     });
     const leftLeg = new THREE.Mesh(leftLegGeometry, skinMaterial.clone());
@@ -132,12 +133,12 @@ export function createCharacter(characterGroup, textureLoader) {
     const rightLegGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
     rightLegGeometry.translate(0, -0.75, 0); // 将几何体原点移到顶部
     // 设置右腿的UV映射 - 修正V坐标顺序
-    mapSkinUVs(rightLegGeometry, {
+    mapBlockUVs(rightLegGeometry, {
         top: [4 / 64, 1 - 16 / 64, 8 / 64, 1 - 20 / 64],     // 上部
-        bottom: [8 / 64, 1 - 16 / 64, 12 / 64, 1 - 20 / 64],    // 下部
-        front: [4 / 64, 1 - 20 / 64, 8 / 64, 1 - 32 / 64],     // 正面
+        bottom: [8 / 64, 1 - 16 / 64, 12 / 64, 1 - 20 / 64],  // 下部
+        front: [4 / 64, 1 - 20 / 64, 8 / 64, 1 - 32 / 64],    // 正面
         back: [12 / 64, 1 - 20 / 64, 16 / 64, 1 - 32 / 64],   // 背面
-        right: [0 / 64, 1 - 20 / 64, 4 / 64, 1 - 32 / 64],     // 右侧
+        right: [0 / 64, 1 - 20 / 64, 4 / 64, 1 - 32 / 64],    // 右侧
         left: [8 / 64, 1 - 20 / 64, 12 / 64, 1 - 32 / 64]     // 左侧
     });
     const rightLeg = new THREE.Mesh(rightLegGeometry, skinMaterial.clone());
@@ -146,68 +147,6 @@ export function createCharacter(characterGroup, textureLoader) {
     character.group.add(rightLeg);
 
     return character;
-}
-
-// 设置UV映射
-function mapSkinUVs(geometry, uvMap) {
-    // 获取几何体的UV属性
-    const uvAttribute = geometry.getAttribute('uv');
-
-    // Three.js BoxGeometry的UV索引顺序:
-    // 0-1-2-3: 右侧 (px)
-    // 4-5-6-7: 左侧 (nx)
-    // 8-9-10-11: 顶部 (py)
-    // 12-13-14-15: 底部 (ny)
-    // 16-17-18-19: 前面 (pz)
-    // 20-21-22-23: 后面 (nz)
-
-    // 右侧面
-    if (uvMap.right) {
-        updateFaceUVs(uvAttribute, 0, uvMap.right);
-    }
-
-    // 左侧面
-    if (uvMap.left) {
-        updateFaceUVs(uvAttribute, 4, uvMap.left);
-    }
-
-    // 顶部
-    if (uvMap.top) {
-        updateFaceUVs(uvAttribute, 8, uvMap.top);
-    }
-
-    // 底部
-    if (uvMap.bottom) {
-        updateFaceUVs(uvAttribute, 12, uvMap.bottom);
-    }
-
-    // 前面 - 修改为映射到后面的索引位置
-    if (uvMap.front) {
-        updateFaceUVs(uvAttribute, 20, uvMap.front);
-    }
-
-    // 后面 - 修改为映射到前面的索引位置
-    if (uvMap.back) {
-        updateFaceUVs(uvAttribute, 16, uvMap.back);
-    }
-
-    // 确保UV更新
-    uvAttribute.needsUpdate = true;
-}
-
-// 辅助函数：更新特定面的UV坐标
-function updateFaceUVs(uvAttribute, startIndex, uvCoords) {
-    const [u1, v1, u2, v2] = uvCoords;
-
-    // 四个顶点的UV坐标 - 最终修正
-    // 右下
-    uvAttribute.setXY(startIndex, u1, v1);     // 左上UV - 正确
-    // 右上
-    uvAttribute.setXY(startIndex + 1, u2, v1); // 右上UV - 修正
-    // 左上
-    uvAttribute.setXY(startIndex + 2, u1, v2); // 左下UV - 正确
-    // 左下
-    uvAttribute.setXY(startIndex + 3, u2, v2); // 右下UV - 修正
 }
 
 // 实现角色动画
