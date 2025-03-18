@@ -94,6 +94,8 @@ function createLlamaModel(scene, textureLoader) {
     // 腿部 (基于29, 29区域的纹理，每条腿4x14x4大小)
     function createLeg(x, z) {
         const legGeometry = new THREE.BoxGeometry(0.8, 2.8, 0.8);
+        legGeometry.translate(0, -1.4, 0); // 移动半个高度
+        
         mapBlockUVs(legGeometry, {
             top: [33/128, 1 - 29/64, 37/128, 1 - 33/64],
             bottom: [37/128, 1 - 29/64, 41/128, 1 - 33/64],
@@ -103,7 +105,7 @@ function createLlamaModel(scene, textureLoader) {
             left: [29/128, 1 - 33/64, 33/128, 1 - 47/64]
         });
         const leg = new THREE.Mesh(legGeometry, llamaMaterial);
-        leg.position.set(x, -1.0, z);
+        leg.position.set(x, -0.4, z);
         return leg;
     }
     
@@ -159,6 +161,16 @@ function createLlamaModel(scene, textureLoader) {
     if (Math.random() < 0.25) {
         llamaGroup.setHasChest(true);
     }
+    
+    // 添加默认移动速度 - 增加速度
+    llamaGroup.defaultSpeed = 0.005; // 提高速度，原来是0.0015
+    
+    // 添加动画参数
+    llamaGroup.animProps = {
+        animationTime: 0,
+        walkingSpeed: 0.2,
+        maxSwingAngle: Math.PI / 6 // 羊驼腿摆动的最大角度 (30度)
+    };
     
     return llamaGroup;
 }
@@ -269,7 +281,53 @@ function findLlamaSpawnHeight(world, x, z, worldSize) {
     return isNaN(result) ? 10 : result;
 }
 
-// 更新所有羊驼的位置(模拟重力和碰撞)
+// 修改腿部动画函数，更新查找腿部的条件以匹配实际位置
+function animateLlamaLegs(llama, deltaTime) {
+    // 如果羊驼正在移动
+    if (llama.moveProps && llama.moveProps.state === 'walking') {
+        // 更新动画计时器
+        llama.animProps.animationTime += llama.animProps.walkingSpeed * (deltaTime / 16);
+        
+        // 计算腿部摆动角度(使用正弦函数)
+        const swingAngle = Math.sin(llama.animProps.animationTime) * llama.animProps.maxSwingAngle;
+        
+        // 获取四条腿的引用 - 修正查找条件，y位置为-0.4
+        const legs = llama.children.filter(child => 
+            child.position.y === -0.4 && 
+            Math.abs(child.position.x) === 0.5
+        );
+        
+        if (legs.length === 4) {
+            // 获取各条腿的引用
+            const frontLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === -0.8);
+            const frontRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === -0.8);
+            const backLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === 1.2);
+            const backRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === 1.2);
+            
+            // 对角腿同步摆动（类似于四足动物的跑步模式）
+            if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
+            if (backRightLeg) backRightLeg.rotation.x = swingAngle;
+            
+            if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
+            if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
+        }
+    } else {
+        // 如果羊驼静止，重置腿部位置
+        llama.animProps.animationTime = 0;
+        
+        // 获取腿部引用并重置位置 - 同样修正y位置为-0.4
+        const legs = llama.children.filter(child => 
+            child.position.y === -0.4 && 
+            Math.abs(child.position.x) === 0.5
+        );
+        
+        legs.forEach(leg => {
+            leg.rotation.x = 0;
+        });
+    }
+}
+
+// 更新所有羊驼的位置(模拟重力、碰撞和随机移动)
 function updateLlamas(llamas, world, worldSize, deltaTime) {
     // 防止deltaTime过大或为NaN
     if (isNaN(deltaTime) || deltaTime > 1000) {
@@ -341,6 +399,7 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
             }
         }
         
+        // 应用重力和碰撞检测
         // 如果没有碰到地面，应用重力
         if (!isCollidingWithGround) {
             // 安全地更新速度
@@ -365,12 +424,135 @@ function updateLlamas(llamas, world, worldSize, deltaTime) {
             llama.velocity.y = 0;
         }
         
+        // 应用随机移动
+        moveAnimalRandomly(llama, deltaTime, world, worldSize);
+        
+        // 添加动画更新
+        animateLlamaLegs(llama, deltaTime);
+        
         // 最后检查位置是否合法
         if (isNaN(llama.position.y)) {
             console.error(`更新后羊驼Y坐标是NaN，重置为安全值`);
             llama.position.y = 10;
         }
     });
+}
+
+// 修改随机移动函数，确保碰撞后的方向变化与前面的逻辑一致
+function moveAnimalRandomly(animal, deltaTime, world, worldSize) {
+    // 如果动物没有移动相关属性，初始化它们
+    if (!animal.moveProps) {
+        animal.moveProps = {
+            // 移动状态: idle, walking
+            state: 'idle',
+            // 移动方向
+            direction: new THREE.Vector3(0, 0, 0),
+            // 当前移动剩余时间
+            moveTimeRemaining: 0,
+            // 当前休息剩余时间
+            idleTimeRemaining: Math.random() * 5000,
+            // 上次改变方向的时间
+            lastDirectionChange: 0,
+            // 移动速度 (每毫秒移动的单位)
+            speed: animal.defaultSpeed || 0.001,
+            // 方向改变的最小间隔 (毫秒)
+            directionChangeInterval: 500
+        };
+    }
+    
+    const props = animal.moveProps;
+    
+    // 更新计时器
+    if (props.state === 'idle') {
+        props.idleTimeRemaining -= deltaTime;
+        
+        // 休息时间结束，开始移动
+        if (props.idleTimeRemaining <= 0) {
+            // 切换到移动状态
+            props.state = 'walking';
+            // 设置移动时间 (1-3秒)
+            props.moveTimeRemaining = 1000 + Math.random() * 2000;
+            
+            // 设置随机移动方向
+            const angle = Math.random() * Math.PI * 2;
+            
+            // 修改：调整方向计算，使羊驼正向前进
+            // 由于羊驼模型头部在Z轴负方向，需要反转方向向量
+            props.direction.set(
+                -Math.sin(angle), // 反转X方向
+                0,
+                -Math.cos(angle)  // 反转Z方向
+            );
+            
+            // 更新动物朝向 - 反转角度使其面向前进方向
+            animal.rotation.y = angle + Math.PI *2; // 添加180度旋转
+        }
+    } else if (props.state === 'walking') {
+        props.moveTimeRemaining -= deltaTime;
+        
+        // 移动时间结束，回到休息状态
+        if (props.moveTimeRemaining <= 0) {
+            // 切换到休息状态
+            props.state = 'idle';
+            // 设置休息时间 (2-6秒)
+            props.idleTimeRemaining = 2000 + Math.random() * 4000;
+            return;
+        }
+        
+        // 只有在地面上时才移动
+        if (animal.isGrounded) {
+            // 计算移动距离
+            const moveDistance = props.speed * deltaTime;
+            
+            // 计算新位置
+            const newPosX = animal.position.x + props.direction.x * moveDistance;
+            const newPosZ = animal.position.z + props.direction.z * moveDistance;
+            
+            // 检查边界
+            const boundaryMargin = 2;
+            const inBounds = (
+                newPosX >= boundaryMargin && 
+                newPosX < worldSize - boundaryMargin &&
+                newPosZ >= boundaryMargin && 
+                newPosZ < worldSize - boundaryMargin
+            );
+            
+            // 检测碰撞
+            let hasCollision = false;
+            if (inBounds) {
+                const floorX = Math.floor(newPosX);
+                const floorY = Math.floor(animal.position.y);
+                const floorZ = Math.floor(newPosZ);
+                
+                // 简单碰撞检测：检查前方是否有方块
+                if (floorY < worldSize - 1 && floorY >= 0) {
+                    try {
+                        hasCollision = world[floorX][floorY][floorZ] !== window.blockTypes.air ||
+                                      world[floorX][floorY + 1][floorZ] !== window.blockTypes.air;
+                    } catch (e) {
+                        console.error(`碰撞检测错误: x=${floorX}, y=${floorY}, z=${floorZ}`, e);
+                    }
+                }
+            }
+            
+            // 如果没有碰撞且在边界内，更新位置
+            if (!hasCollision && inBounds) {
+                animal.position.x = newPosX;
+                animal.position.z = newPosZ;
+            } else {
+                // 如果发生碰撞或超出边界，改变方向
+                const newAngle = Math.random() * Math.PI * 2;
+                // 修改：保持与上面相同的反转逻辑
+                props.direction.set(
+                    -Math.sin(newAngle),
+                    0,
+                    -Math.cos(newAngle)
+                );
+                // 修改：保持与上面相同的旋转逻辑
+                animal.rotation.y = newAngle + Math.PI;
+            }
+        }
+    }
 }
 
 // 初始化动物系统

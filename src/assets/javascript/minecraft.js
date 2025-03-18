@@ -230,12 +230,21 @@ function animate(currentTime) {
 
     // 计算帧时间和 FPS
     frameTime = currentTime - lastFrameTime;
+    
+    // 添加：防止 frameTime 为 NaN 或异常值
+    if (isNaN(frameTime) || frameTime <= 0 || frameTime > 1000) {
+        frameTime = 16; // 使用合理的默认值(约60fps)
+    }
+    
     const fps = Math.round(1000 / frameTime);
     lastFrameTime = currentTime;
 
+    // 添加：确保传递给动物系统的是有效数值
+    const animalDeltaTime = frameTime;
+    
     // 添加：更新动物系统（传递时间增量）
     if (animalSystem && typeof animalSystem.update === 'function') {
-        animalSystem.update(frameTime / 1000 * 60);
+        animalSystem.update(animalDeltaTime);
     } else {
         console.error("动物系统或更新函数不存在!");
     }
