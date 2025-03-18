@@ -850,15 +850,41 @@
         });
 
         // 碰撞检测
-        function checkCollision(position, direction) {
+        function checkCollision(position, direction, checkClimb = false) {
             const x = Math.floor(position.x + direction.x * 0.5);
             const y = Math.floor(position.y + direction.y * 0.5);
             const z = Math.floor(position.z + direction.z * 0.5);
 
             if (x >= 0 && x < worldSize && y >= 0 && y < worldSize && z >= 0 && z < worldSize) {
-                return world[x][y][z] !== blockTypes.air;
+                // 如果不需要攀爬检测，直接返回是否有碰撞
+                if (!checkClimb) {
+                    return world[x][y][z] !== blockTypes.air;
+                }
+                
+                // 攀爬检测: 检查前方是否有一格高度的障碍物
+                if (world[x][y][z] !== blockTypes.air) {
+                    // 检查障碍物上方是否为空气
+                    if (y + 1 < worldSize && world[x][y + 1][z] === blockTypes.air) {
+                        // 检查障碍物上方再上一格也是空气(确保有足够头部空间)
+                        if (y + 2 < worldSize && world[x][y + 2][z] === blockTypes.air) {
+                            // 检查障碍物上方是否有空间可站立
+                            return {canClimb: true, climbHeight: y + 1};
+                        }
+                    }
+                    
+                    // 检查是否超过2格高度
+                    if (y + 1 < worldSize && world[x][y + 1][z] !== blockTypes.air && 
+                        y + 2 < worldSize && world[x][y + 2][z] !== blockTypes.air) {
+                        return {canClimb: false, tooHigh: true};
+                    }
+                    
+                    // 普通碰撞
+                    return {canClimb: false, tooHigh: false};
+                }
+                
+                return false; // 没有碰撞
             }
-            return true;
+            return {canClimb: false, tooHigh: false}; // 边界碰撞
         }
 
         // 修改updateCamera函数
@@ -891,10 +917,24 @@
             const rotateMatrix = new THREE.Matrix4().makeRotationY(player.rotation.y);
             direction.applyMatrix4(rotateMatrix);
 
-            if (!checkCollision(player.position, direction)) {
+            // 检测前方碰撞并支持攀爬
+            const collisionResult = checkCollision(player.position, direction, true);
+            
+            if (collisionResult === false) {
+                // 没有碰撞，正常移动
+                player.velocity.x = direction.x * moveSpeed;
+                player.velocity.z = direction.z * moveSpeed;
+            } else if (collisionResult.canClimb === true) {
+                // 可以攀爬，调整Y轴位置并继续移动
+                console.log("自动攀爬到方块上方");
+                player.position.y = collisionResult.climbHeight + 0.5; // 站在方块上面
                 player.velocity.x = direction.x * moveSpeed;
                 player.velocity.z = direction.z * moveSpeed;
             } else {
+                // 无法攀爬，停止移动
+                if (collisionResult.tooHigh) {
+                    console.log("障碍物太高，无法攀爬");
+                }
                 player.velocity.x = 0;
                 player.velocity.z = 0;
             }
