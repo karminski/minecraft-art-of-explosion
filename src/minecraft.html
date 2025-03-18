@@ -872,17 +872,17 @@
                 updateFaceUVs(uvAttribute, 12, uvMap.bottom);
             }
             
-            // 前面
+            // 前面 - 修改为映射到后面的索引位置
             if (uvMap.front) {
-                updateFaceUVs(uvAttribute, 16, uvMap.front);
+                updateFaceUVs(uvAttribute, 20, uvMap.front);
             }
             
-            // 后面
+            // 后面 - 修改为映射到前面的索引位置
             if (uvMap.back) {
-                updateFaceUVs(uvAttribute, 20, uvMap.back);
+                updateFaceUVs(uvAttribute, 16, uvMap.back);
             }
             
-            // 标记需要更新
+            // 确保UV更新
             uvAttribute.needsUpdate = true;
         }
 
