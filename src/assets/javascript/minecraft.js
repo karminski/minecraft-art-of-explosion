@@ -324,13 +324,24 @@ function animate(currentTime) {
         debris.mesh.rotation.y += debris.rotationSpeed.y;
         debris.mesh.rotation.z += debris.rotationSpeed.z;
 
+        // 如果是动物碎片，逐渐缩小
+        if (debris.mesh.isDebris && debris.shrinkFactor) {
+            // 每帧缩小一点
+            debris.mesh.scale.multiplyScalar(debris.shrinkFactor);
+        }
+
         // 增加生命计数
         debris.currentLife++;
 
         // 如果碎片触地或者寿命结束，移除它
         if (debris.currentLife >= debris.lifeTime || debris.mesh.position.y < 0) {
             scene.remove(debris.mesh);
-            debris.mesh.geometry.dispose();
+            
+            // 对于普通方块碎片，释放几何体资源
+            if (!debris.mesh.isDebris && debris.mesh.geometry) {
+                debris.mesh.geometry.dispose();
+            }
+            
             explosionDebris.splice(i, 1);
         }
     }

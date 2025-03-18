@@ -141,7 +141,7 @@ function createLlamaModel(scene, textureLoader) {
 function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
     const llamas = [];
     // 减少生成数量，便于调试
-    const count = 10; // 固定生成3只进行测试
+    const count = 40; // 固定生成3只进行测试
     
     console.log(`尝试生成 ${count} 只羊驼...`);
     console.log(`世界大小: ${worldSize}`);
@@ -160,7 +160,7 @@ function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
             console.log(`生成羊驼 #${i} 在坐标: x=${x}, z=${z}`);
             
             // 安全地找到生成高度
-            let spawnY = 20; // 默认高度
+            let spawnY = 30; // 默认高度
             try {
                 spawnY = findLlamaSpawnHeight(world, x, z, worldSize) + 5;
                 console.log(`计算得到生成高度: y=${spawnY}`);
@@ -168,7 +168,7 @@ function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
                 // 确保Y不是NaN
                 if (isNaN(spawnY)) {
                     console.error(`生成高度是NaN，使用默认值`);
-                    spawnY = 20;
+                    spawnY = 30;
                 }
             } catch (e) {
                 console.error(`计算生成高度时出错:`, e);

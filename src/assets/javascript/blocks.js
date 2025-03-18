@@ -408,6 +408,47 @@ function createBlockDebris(scene, x, y, z, blockType, materials, blockTypes, exp
     }
 }
 
+// 创建动物爆炸碎片
+function createAnimalDebris(scene, animal, explosionCenter, explosionDebris) {
+    // 暂停动物的常规动画和移动
+    animal.pauseAnimation = true;
+    
+    // 复制动物当前位置
+    const originalPosition = animal.position.clone();
+    
+    // 设置动物的初始物理属性
+    const direction = new THREE.Vector3()
+        .subVectors(originalPosition, explosionCenter)
+        .normalize();
+    
+    // 增加向上的初始速度分量
+    direction.y += 1.5;
+    direction.normalize();
+    
+    // 设置爆炸物理属性
+    const speed = 0.2 + Math.random() * 0.1; // 较快的初始速度
+    
+    const rotationSpeed = {
+        x: (Math.random() - 0.5) * 0.4,
+        y: (Math.random() - 0.5) * 0.4,
+        z: (Math.random() - 0.5) * 0.4
+    };
+    
+    // 将动物标记为碎片
+    animal.isDebris = true;
+    
+    // 将碎片添加到数组中以便更新
+    explosionDebris.push({
+        mesh: animal,
+        velocity: direction.multiplyScalar(speed),
+        rotationSpeed: rotationSpeed,
+        lifeTime: 120 + Math.floor(Math.random() * 60), // 120-180帧的存在时间
+        currentLife: 0,
+        gravity: 0.003,
+        shrinkFactor: 0.99 // 每帧缩小系数
+    });
+}
+
 // 激活TNT定时器
 function startTNTTimer(block, scene, blockReferences) {
     console.log("TNT激活！");
@@ -516,6 +557,9 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
         
         // 检查每只羊驼是否在爆炸范围内
         animals.llamas.forEach((llama, index) => {
+            // 跳过已经是碎片的动物
+            if (llama.isDebris) return;
+            
             // 计算羊驼到爆炸中心的距离
             const distance = llama.position.distanceTo(explosionCenter);
             
@@ -527,8 +571,8 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
                 // 在羊驼位置创建小爆炸特效
                 createExplosionAnimation(scene, llama.position.clone(), explosionTextures, 1.5);
                 
-                // 从场景中移除羊驼
-                scene.remove(llama);
+                // 转换动物为碎片而不是直接移除
+                createAnimalDebris(scene, llama, explosionCenter, explosionDebris);
                 
                 // 如果有道具库，则增加TNT数量
                 if (inventory && inventory.items) {
@@ -536,47 +580,14 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
                     inventory.items[1].count += 1;
                     
                     // 如果提供了更新UI的函数，则更新UI显示
-                    if (typeof updateInventoryUI === 'function') {
-                        // 这里需要传递正确的参数，不能直接调用updateInventoryUI()
-                        // 添加debug日志
-                        console.log("尝试更新物品栏UI，character参数:", character);
-                        
-                        // 检查character参数是否存在
-                        if (character) {
-                            updateInventoryUI(character, blockTypes, textures, materials);
-                        } else {
-                            console.warn("无法更新物品栏UI：character参数缺失");
-                            // 尝试直接更新物品栏显示，而不处理手持物品
-                            const slots = document.querySelectorAll('.inventory-slot');
-                            slots.forEach((slot, index) => {
-                                // 更新选中状态
-                                slot.classList.remove('selected');
-                                if (index === inventory.selectedIndex) {
-                                    slot.classList.add('selected');
-                                }
-                                
-                                // 清除旧的计数元素
-                                const countElements = slot.getElementsByClassName('item-count');
-                                while (countElements.length > 0) {
-                                    slot.removeChild(countElements[0]);
-                                }
-                                
-                                // 添加新的计数显示
-                                const count = inventory.items[index].count;
-                                if (count > 0) {
-                                    const countElement = document.createElement('div');
-                                    countElement.className = 'item-count';
-                                    countElement.textContent = `x${count}`;
-                                    slot.appendChild(countElement);
-                                }
-                            });
-                        }
+                    if (typeof updateInventoryUI === 'function' && character) {
+                        updateInventoryUI(character, blockTypes, textures, materials);
                     }
                 }
             }
         });
         
-        // 从动物列表中移除被炸掉的羊驼
+        // 从动物列表中移除被炸掉并转为碎片的羊驼
         explodedAnimals.forEach(index => {
             animals.llamas.splice(index, 1);
         });
@@ -727,6 +738,7 @@ export {
     placeBlock,
     createExplosionAnimation,
     createBlockDebris,
+    createAnimalDebris,
     startTNTTimer,
     explodeTNT
 };
