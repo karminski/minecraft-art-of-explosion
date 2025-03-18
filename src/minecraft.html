@@ -1517,10 +1517,16 @@
             // 记录已经被销毁的方块位置，避免重复创建爆炸动画
             const destroyedBlocks = new Set();
             
-            // 遍历爆炸范围内的所有方块 - 稍微增加爆炸范围
-            for (let dx = -3; dx <= 3; dx++) { // 从2增加到3
-                for (let dy = -3; dy <= 3; dy++) {
-                    for (let dz = -3; dz <= 3; dz++) {
+            // 存储发现的TNT方块位置，用于后续连锁引爆
+            const chainTNTBlocks = [];
+            
+            // 设置爆炸球体的最大半径
+            const explosionRadius = 3.5; // 稍微比原来的3格更大一点
+            
+            // 遍历爆炸范围内的所有方块（仍使用立方体范围来遍历，但应用球形检测）
+            for (let dx = -Math.ceil(explosionRadius); dx <= Math.ceil(explosionRadius); dx++) {
+                for (let dy = -Math.ceil(explosionRadius); dy <= Math.ceil(explosionRadius); dy++) {
+                    for (let dz = -Math.ceil(explosionRadius); dz <= Math.ceil(explosionRadius); dz++) {
                         const blockX = x + dx;
                         const blockY = y + dy;
                         const blockZ = z + dz;
@@ -1533,65 +1539,109 @@
                             // 跳过TNT本身的位置
                             if (dx === 0 && dy === 0 && dz === 0) continue;
                             
-                            // 如果是石头方块，则不移除（免疫TNT）
-                            if (world[blockX][blockY][blockZ] === blockTypes.stone) {
-                                continue;
-                            }
+                            // 计算到爆炸中心的距离
+                            const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
                             
-                            // 如果不是空气，执行射线检测
-                            if (world[blockX][blockY][blockZ] !== blockTypes.air) {
-                                // 计算方块中心
-                                const blockPosition = new THREE.Vector3(
-                                    blockX + 0.5, 
-                                    blockY + 0.5, 
-                                    blockZ + 0.5
-                                );
-                                
-                                // 方向向量：从TNT指向目标方块
-                                const direction = new THREE.Vector3().subVectors(blockPosition, tntPosition).normalize();
-                                
-                                // 创建射线
-                                const raycaster = new THREE.Raycaster(tntPosition, direction);
-                                
-                                // 查找可能阻挡的方块
-                                const distance = tntPosition.distanceTo(blockPosition);
-                                const intersects = raycaster.intersectObjects(blockReferences);
-                                
-                                let blocked = false;
-                                
-                                // 检查是否被石头阻挡
-                                for (let i = 0; i < intersects.length; i++) {
-                                    // 如果在到达目标方块前碰到石头，则被阻挡
-                                    if (intersects[i].distance < distance && 
-                                        intersects[i].object.type === blockTypes.stone) {
-                                        blocked = true;
-                                        break;
-                                    }
+                            // 添加一些随机性，使爆炸边缘不那么规则 (0.9-1.1之间的随机系数)
+                            const randomFactor = 0.9 + Math.random() * 0.2;
+                            const effectiveRadius = explosionRadius * randomFactor;
+                            
+                            // 只有在球体范围内的方块才会被爆炸影响
+                            if (distance <= effectiveRadius) {
+                                // 如果是石头方块，则不移除（免疫TNT）
+                                if (world[blockX][blockY][blockZ] === blockTypes.stone) {
+                                    continue;
                                 }
                                 
-                                // 如果没有被石头阻挡，则移除方块
-                                if (!blocked) {
-                                    // 创建方块碎片（新增）
-                                    const blockType = world[blockX][blockY][blockZ];
-                                    createBlockDebris(blockX, blockY, blockZ, blockType);
-                                    
-                                    // 记录已销毁方块位置
-                                    destroyedBlocks.add(`${blockX},${blockY},${blockZ}`);
-                                    
-                                    world[blockX][blockY][blockZ] = blockTypes.air;
-                                    // 移除对应的方块对象
-                                    const blockIndex = blockReferences.findIndex(block =>
-                                        block.blockX === blockX && block.blockY === blockY && block.blockZ === blockZ
+                                // 如果不是空气，执行射线检测
+                                if (world[blockX][blockY][blockZ] !== blockTypes.air) {
+                                    // 计算方块中心
+                                    const blockPosition = new THREE.Vector3(
+                                        blockX + 0.5, 
+                                        blockY + 0.5, 
+                                        blockZ + 0.5
                                     );
-                                    if (blockIndex !== -1) {
-                                        scene.remove(blockReferences[blockIndex]);
-                                        blockReferences.splice(blockIndex, 1);
+                                    
+                                    // 方向向量：从TNT指向目标方块
+                                    const direction = new THREE.Vector3().subVectors(blockPosition, tntPosition).normalize();
+                                    
+                                    // 创建射线
+                                    const raycaster = new THREE.Raycaster(tntPosition, direction);
+                                    
+                                    // 查找可能阻挡的方块
+                                    const rayDistance = tntPosition.distanceTo(blockPosition);
+                                    const intersects = raycaster.intersectObjects(blockReferences);
+                                    
+                                    let blocked = false;
+                                    
+                                    // 检查是否被石头阻挡
+                                    for (let i = 0; i < intersects.length; i++) {
+                                        // 如果在到达目标方块前碰到石头，则被阻挡
+                                        if (intersects[i].distance < rayDistance && 
+                                            intersects[i].object.type === blockTypes.stone) {
+                                            blocked = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // 如果没有被石头阻挡，则移除方块
+                                    if (!blocked) {
+                                        // 检查当前方块是否为TNT，如果是则记录位置稍后引爆
+                                        if (world[blockX][blockY][blockZ] === blockTypes.tnt) {
+                                            // 将此TNT添加到连锁引爆列表
+                                            chainTNTBlocks.push({x: blockX, y: blockY, z: blockZ});
+                                            
+                                            // 查找这个TNT方块对象，以清除其可能存在的定时器
+                                            const tntBlockObj = blockReferences.find(block => 
+                                                block.blockX === blockX && block.blockY === blockY && block.blockZ === blockZ && block.type === blockTypes.tnt
+                                            );
+                                            
+                                            // 如果找到了这个TNT方块对象且它有正在运行的定时器，则清理定时器
+                                            if (tntBlockObj && tntTimers[tntBlockObj.uuid]) {
+                                                // 清除闪烁定时器
+                                                clearInterval(tntTimers[tntBlockObj.uuid].highlightInterval);
+                                                // 清除爆炸定时器
+                                                clearTimeout(tntTimers[tntBlockObj.uuid].explodeTimeout);
+                                                // 从定时器存储中删除
+                                                delete tntTimers[tntBlockObj.uuid];
+                                                console.log(`清理了被波及TNT的定时器: (${blockX}, ${blockY}, ${blockZ})`);
+                                            }
+                                        }
+                                        
+                                        // 创建方块碎片
+                                        const blockType = world[blockX][blockY][blockZ];
+                                        createBlockDebris(blockX, blockY, blockZ, blockType);
+                                        
+                                        // 记录已销毁方块位置
+                                        destroyedBlocks.add(`${blockX},${blockY},${blockZ}`);
+                                        
+                                        world[blockX][blockY][blockZ] = blockTypes.air;
+                                        // 移除对应的方块对象
+                                        const blockIndex = blockReferences.findIndex(block =>
+                                            block.blockX === blockX && block.blockY === blockY && block.blockZ === blockZ
+                                        );
+                                        if (blockIndex !== -1) {
+                                            scene.remove(blockReferences[blockIndex]);
+                                            blockReferences.splice(blockIndex, 1);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+            
+            // 引爆连锁TNT，添加随机延迟使爆炸更自然
+            if (chainTNTBlocks.length > 0) {
+                chainTNTBlocks.forEach((tntBlock, index) => {
+                    // 随机延迟200-600毫秒，使连锁爆炸更加生动
+                    const delay = 50 + Math.random() * 40;
+                    setTimeout(() => {
+                        console.log(`连锁引爆TNT: (${tntBlock.x}, ${tntBlock.y}, ${tntBlock.z})`);
+                        explodeTNT(tntBlock.x, tntBlock.y, tntBlock.z);
+                    }, delay);
+                });
             }
         }
 
