@@ -478,7 +478,7 @@ function startTNTTimer(block, scene, blockReferences) {
 }
 
 // TNT爆炸效果
-function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris) {
+function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures) {
     // 爆炸之前将其移除
     world[x][y][z] = blockTypes.air;
 
@@ -502,6 +502,84 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
         setTimeout(() => {
             createExplosionAnimation(scene, extraExplosionPos, explosionTextures, scale);
         }, Math.random() * 200); // 延迟相同
+    }
+
+    // 检查爆炸范围内的动物
+    if (animals && animals.llamas && animals.llamas.length > 0) {
+        // 记录被炸到的动物索引
+        const explodedAnimals = [];
+        // 设置爆炸检测半径（与方块爆炸半径保持一致）
+        const animalExplosionRadius = 3.5;
+        
+        // 计算爆炸中心点
+        const explosionCenter = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
+        
+        // 检查每只羊驼是否在爆炸范围内
+        animals.llamas.forEach((llama, index) => {
+            // 计算羊驼到爆炸中心的距离
+            const distance = llama.position.distanceTo(explosionCenter);
+            
+            // 如果距离小于爆炸半径，则认为羊驼被炸到
+            if (distance <= animalExplosionRadius) {
+                // 将索引添加到被炸动物列表中（倒序添加以便后续删除）
+                explodedAnimals.unshift(index);
+                
+                // 在羊驼位置创建小爆炸特效
+                createExplosionAnimation(scene, llama.position.clone(), explosionTextures, 1.5);
+                
+                // 从场景中移除羊驼
+                scene.remove(llama);
+                
+                // 如果有道具库，则增加TNT数量
+                if (inventory && inventory.items) {
+                    // TNT通常在索引1的位置
+                    inventory.items[1].count += 1;
+                    
+                    // 如果提供了更新UI的函数，则更新UI显示
+                    if (typeof updateInventoryUI === 'function') {
+                        // 这里需要传递正确的参数，不能直接调用updateInventoryUI()
+                        // 添加debug日志
+                        console.log("尝试更新物品栏UI，character参数:", character);
+                        
+                        // 检查character参数是否存在
+                        if (character) {
+                            updateInventoryUI(character, blockTypes, textures, materials);
+                        } else {
+                            console.warn("无法更新物品栏UI：character参数缺失");
+                            // 尝试直接更新物品栏显示，而不处理手持物品
+                            const slots = document.querySelectorAll('.inventory-slot');
+                            slots.forEach((slot, index) => {
+                                // 更新选中状态
+                                slot.classList.remove('selected');
+                                if (index === inventory.selectedIndex) {
+                                    slot.classList.add('selected');
+                                }
+                                
+                                // 清除旧的计数元素
+                                const countElements = slot.getElementsByClassName('item-count');
+                                while (countElements.length > 0) {
+                                    slot.removeChild(countElements[0]);
+                                }
+                                
+                                // 添加新的计数显示
+                                const count = inventory.items[index].count;
+                                if (count > 0) {
+                                    const countElement = document.createElement('div');
+                                    countElement.className = 'item-count';
+                                    countElement.textContent = `x${count}`;
+                                    slot.appendChild(countElement);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 从动物列表中移除被炸掉的羊驼
+        explodedAnimals.forEach(index => {
+            animals.llamas.splice(index, 1);
+        });
     }
 
     // 从TNT发出射线检测
@@ -633,7 +711,7 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
             const delay = 50 + Math.random() * 40;
             setTimeout(() => {
                 console.log(`连锁引爆TNT: (${tntBlock.x}, ${tntBlock.y}, ${tntBlock.z})`);
-                explodeTNT(scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris);
+                explodeTNT(scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures);
             }, delay);
         });
     }

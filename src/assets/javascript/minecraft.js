@@ -356,10 +356,44 @@ initPageLoadMouseLock(window);
 // 监听TNT爆炸事件
 document.addEventListener('tnt-explosion', (event) => {
     const { x, y, z } = event.detail;
-    explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris);
+    console.log(`TNT爆炸触发，位置: (${x}, ${y}, ${z})`);
+    
+    explodeTNT(
+        scene, 
+        x, y, z, 
+        world, 
+        blockReferences, 
+        worldSize, 
+        blockTypes, 
+        explosionTextures, 
+        materials, 
+        explosionDebris,
+        animalSystem.animals,
+        inventory,
+        updateInventoryUI,
+        character,
+        textures
+    );
 });
 
 // 保留现有的全局函数处理方式作为备份
 window.handleTNTExplosion = function(x, y, z) {
-    explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris);
+    console.log(`全局TNT爆炸处理，位置: (${x}, ${y}, ${z})`);
+    
+    explodeTNT(
+        scene, 
+        x, y, z, 
+        world, 
+        blockReferences, 
+        worldSize, 
+        blockTypes, 
+        explosionTextures, 
+        materials, 
+        explosionDebris,
+        animalSystem.animals,
+        inventory,
+        updateInventoryUI,
+        character,
+        textures
+    );
 };
