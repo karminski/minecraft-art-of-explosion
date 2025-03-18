@@ -100,8 +100,8 @@
         WASD - 移动<br>
         鼠标 - 转向<br>
         空格 - 跳跃<br>
-        左键 - 挖方块<br>
-        右键 - 放方块<br>
+        左键 - 矿镐(挖方块)/放方块<br>
+        右键 - 暂无功能<br>
         按M锁定鼠标<br>
         1-8 - 切换道具<br>
         <br>
@@ -1648,11 +1648,18 @@
 
             // 使用防抖动版本的方块操作
             if (isMouseDown) {
-                breakBlockWithDebounce();
+                // 根据当前选择的道具决定左键行为
+                if (inventory.selectedIndex === 0) {
+                    // 当选择矿镐时，左键执行挖掘方块功能
+                    breakBlockWithDebounce();
+                } else {
+                    // 选择其他道具时，左键执行放置方块功能
+                    placeBlockWithDebounce();
+                }
             }
 
             if (isRightMouseDown) {
-                placeBlockWithDebounce();
+                // 右键功能暂时留空
             }
 
             // 更新爆炸碎片
