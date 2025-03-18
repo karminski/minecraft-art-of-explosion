@@ -41,6 +41,21 @@ import {
     createSky
 } from './sky_and_light.js';
 
+// 添加导入controls.js中的函数
+import {
+    initControlsState,
+    setupMouseControls,
+    setupKeyboardControls,
+    setupMouseLock,
+    setupAdvancedMouseControls,
+    setupInventorySelection,
+    setupCameraToggle,
+    breakBlockWithDebounce,
+    placeBlockWithDebounce,
+    handleMouseActions,
+    initPageLoadMouseLock
+} from './controls.js';
+
 // 初始化场景、相机和渲染器
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -113,109 +128,31 @@ character = createCharacter(characterGroup, textureLoader);
 // 设置初始角色透明度（因为默认是第一人称视角）
 setCharacterPartsOpacity(character, true);
 
+// 替换全局键鼠控制变量为控制状态对象
+const controlsState = initControlsState();
+
+// 移除原始的鼠标控制代码，使用新函数代替
+setupMouseControls(controlsState, document);
+
+// 移除原始的键盘控制代码，使用新函数代替
+setupKeyboardControls(controlsState, document);
+
+// 移除原始的鼠标锁定代码，使用新函数代替
+setupMouseLock(controlsState, document);
+
+// 设置高级鼠标控制（处理第一人称视角）
+setupAdvancedMouseControls(controlsState, player, camera, document);
+
+// 设置物品快捷栏选择
+setupInventorySelection(inventory, character, blockTypes, textures, materials, document);
+
 // 修改摄像机切换代码
 document.addEventListener('keydown', (event) => {
-    // 检测Ctrl+1和Ctrl+2组合键
-    if (event.ctrlKey) {
-        if (event.key === '2') {
-            // 切换到第一人称视角（角色头部摄像机）
-            activeCamera = camera;
-            console.log('切换到第一人称视角');
-
-            // 设置角色部件透明度
-            setCharacterPartsOpacity(character, true);
-
-        } else if (event.key === '3') {
-            // 切换到俯视摄像机
-            activeCamera = overviewCamera;
-            console.log('切换到俯视视角');
-
-            // 恢复角色部件可见性
-            setCharacterPartsOpacity(character, false);
-
-        }
+    if (event.ctrlKey && (event.key === '2' || event.key === '3')) {
+        const newCamera = setupCameraToggle(character, camera, overviewCamera, { ctrlKey: true, key: event.key });
+        if (newCamera) activeCamera = newCamera;
     }
 });
-
-// 鼠标控制
-let mouseX = 0;
-let mouseY = 0;
-let isMouseDown = false;
-let isRightMouseDown = false;
-
-document.addEventListener('mousemove', (event) => {
-    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-    mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-});
-
-document.addEventListener('mousedown', (event) => {
-    if (event.button === 0) {
-        isMouseDown = true;
-    } else if (event.button === 2) {
-        isRightMouseDown = true;
-    }
-});
-
-document.addEventListener('mouseup', (event) => {
-    if (event.button === 0) {
-        isMouseDown = false;
-    } else if (event.button === 2) {
-        isRightMouseDown = false;
-    }
-});
-
-// 键盘控制
-const keys = {};
-document.addEventListener('keydown', (event) => {
-    keys[event.key] = true;
-});
-document.addEventListener('keyup', (event) => {
-    keys[event.key] = false;
-});
-
-// 鼠标锁定
-let mouseLock = false;
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'm' && !mouseLock) {
-        mouseLock = true;
-        document.body.requestPointerLock();
-    }
-});
-
-document.addEventListener('pointerlockchange', () => {
-    mouseLock = document.pointerLockElement === document.body;
-});
-
-document.addEventListener('mousemove', (event) => {
-    if (mouseLock) {
-        const deltaX = event.movementX;
-        const deltaY = event.movementY;
-
-        // 修改后的旋转计算
-        player.rotation.y -= deltaX * 0.002;
-        // 将角度限制在 -π 到 π 之间
-        player.rotation.y = ((player.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
-
-        player.rotation.x -= deltaY * 0.002;
-        player.rotation.x = THREE.MathUtils.clamp(player.rotation.x, -Math.PI / 2, Math.PI / 2);
-
-        // 使用四元数直接累积旋转
-        const deltaQuaternion = new THREE.Quaternion()
-            .setFromAxisAngle(new THREE.Vector3(0, 1, 0), -deltaX * 0.002) // Y轴旋转
-            .multiply(
-                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -deltaY * 0.002) // X轴旋转
-            );
-        camera.quaternion.multiply(deltaQuaternion).normalize();
-    }
-});
-
-// 添加性能优化辅助函数
-let lastRaycastTime = 0;
-const raycastInterval = 100; // 每100毫秒检测一次
-
-let isBreakingBlock = false;
-let isPlacingBlock = false;
-const blockActionCooldown = 250; // 操作冷却时间(毫秒)
 
 // 在全局添加视锥和矩阵变量，放在初始化场景、相机和渲染器的代码之后
 const frustum = new THREE.Frustum();
@@ -289,7 +226,7 @@ function animate(currentTime) {
     const fps = Math.round(1000 / frameTime);
     lastFrameTime = currentTime;
 
-    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, keys);
+    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys);
 
     // 获取相机朝向向量
     const lookDirection = new THREE.Vector3();
@@ -341,10 +278,28 @@ function animate(currentTime) {
         });
     }
 
+    // 使用新的handleMouseActions函数处理鼠标操作
+    handleMouseActions(
+        controlsState, 
+        scene, 
+        world, 
+        blockReferences, 
+        camera, 
+        inventory, 
+        blockTypes, 
+        worldSize, 
+        player, 
+        createBlock, 
+        updateInventoryUI, 
+        character, 
+        textures, 
+        materials
+    );
+    
     // 优化：节流高亮方块的射线检测
-    if (currentTime - lastRaycastTime > raycastInterval) {
+    if (currentTime - controlsState.lastRaycastTime > controlsState.raycastInterval) {
         highlightBlock(blockReferences, camera);
-        lastRaycastTime = currentTime;
+        controlsState.lastRaycastTime = currentTime;
     }
 
     // 更新调试面板，添加渲染模式信息
@@ -363,22 +318,6 @@ function animate(currentTime) {
         `Current View: ${activeCamera === camera ? '第一人称' : '俯视'}<br>` +
         `Render Mode: ${activeCamera === camera ? '视锥剔除' : '全部渲染'}<br>` +
         `Render Distance: ${activeCamera === camera ? renderSettings.currentRenderDistance.toFixed(1) : '无限制'}`;
-
-    // 使用防抖动版本的方块操作
-    if (isMouseDown) {
-        // 根据当前选择的道具决定左键行为
-        if (inventory.selectedIndex === 0) {
-            // 当选择矿镐时，左键执行挖掘方块功能
-            breakBlockWithDebounce();
-        } else {
-            // 选择其他道具时，左键执行放置方块功能
-            placeBlockWithDebounce();
-        }
-    }
-
-    if (isRightMouseDown) {
-        // 右键功能暂时留空
-    }
 
     // 更新爆炸碎片
     for (let i = explosionDebris.length - 1; i >= 0; i--) {
@@ -444,51 +383,8 @@ let activeCamera = camera; // 默认使用主摄像机
 // 开始动画循环
 animate();
 
-// 添加页面加载完成后自动锁定鼠标的逻辑
-window.addEventListener('load', () => {
-    // 在页面加载后稍微延迟锁定，以确保所有资源都已加载
-    setTimeout(() => {
-        document.body.requestPointerLock();
-    }, 1000);
-});
-
-// 保留现有的指针锁定变更事件处理
-document.addEventListener('pointerlockchange', () => {
-    mouseLock = document.pointerLockElement === document.body;
-
-    // 如果鼠标解锁了，添加点击事件重新锁定
-    if (!mouseLock) {
-        const clickToLock = () => {
-            document.body.requestPointerLock();
-            document.removeEventListener('click', clickToLock);
-        };
-        document.addEventListener('click', clickToLock);
-    }
-});
-
-// 添加防抖版的方块操作函数
-function breakBlockWithDebounce() {
-    if (!isBreakingBlock) {
-        isBreakingBlock = true;
-        breakBlock(scene, world, blockReferences, camera, inventory, blockTypes, updateInventoryUI, character);
-        setTimeout(() => {
-            isBreakingBlock = false;
-        }, blockActionCooldown);
-    }
-}
-
-function placeBlockWithDebounce() {
-    if (!isPlacingBlock) {
-        isPlacingBlock = true;
-        placeBlock(scene, world, blockReferences, camera, inventory, blockTypes, worldSize, player, 
-                  (scene, x, y, z, type, materials, textures, blockReferences, inventory) => 
-                      createBlock(scene, x, y, z, type, materials, textures, blockReferences, inventory), 
-                  updateInventoryUI, character, textures, materials);
-        setTimeout(() => {
-            isPlacingBlock = false;
-        }, blockActionCooldown);
-    }
-}
+// 使用新的函数初始化页面加载时的鼠标锁定
+initPageLoadMouseLock(window);
 
 // 监听TNT爆炸事件
 document.addEventListener('tnt-explosion', (event) => {
