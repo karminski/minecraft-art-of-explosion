@@ -704,8 +704,12 @@
         // 创建角色
         character = createCharacter();
 
+        // 添加这个全局变量用于存储手持物品引用
+        let heldItemMesh = null;
+
         // 设置初始角色透明度（因为默认是第一人称视角）
         setCharacterPartsOpacity(true);
+
 
         // 创建角色模型
         function createCharacter() {
@@ -777,6 +781,8 @@
             
             return character;
         }
+
+       
 
         // 鼠标控制
         let mouseX = 0;
@@ -1315,6 +1321,88 @@
             selectedIndex: 0
         };
 
+         // 添加这个新函数来更新手持物品
+        function updateHeldItem() {
+            // 先移除旧的手持物品（如果存在）
+            if (heldItemMesh) {
+                character.rightArm.remove(heldItemMesh);
+                heldItemMesh.geometry.dispose();
+                if (heldItemMesh.material) {
+                    if (Array.isArray(heldItemMesh.material)) {
+                        heldItemMesh.material.forEach(m => m.dispose());
+                    } else {
+                        heldItemMesh.material.dispose();
+                    }
+                }
+                heldItemMesh = null;
+            }
+            
+            // 获取当前选中的物品
+            const selectedItem = inventory.items[inventory.selectedIndex];
+            
+            // 如果物品数量为0或者是道具1（矿镐）则不创建手持物品
+            if (selectedItem.count <= 0 && inventory.selectedIndex !== 0) {
+                return;
+            }
+            
+            // 根据选中的物品创建对应的方块
+            if (inventory.selectedIndex >= 1) {
+                let blockType;
+                switch (inventory.selectedIndex) {
+                    case 1: // TNT
+                        blockType = blockTypes.tnt;
+                        break;
+                    case 2: // 泥土
+                        blockType = blockTypes.dirt;
+                        break;
+                    case 3: // 石头
+                        blockType = blockTypes.stone;
+                        break;
+                    case 4: // 木头
+                        blockType = blockTypes.tree;
+                        break;
+                    case 5: // 树叶
+                        blockType = blockTypes.leaves;
+                        break;
+                    default:
+                        return; // 其他道具暂不处理
+                }
+                
+                // 创建半尺寸的方块几何体
+                const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                
+                let material;
+                
+                // 根据方块类型创建材质
+                if (blockType === blockTypes.tnt) {
+                    // TNT使用多种材质
+                    material = [
+                        new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 右侧
+                        new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 左侧
+                        new THREE.MeshPhongMaterial({ map: textures.tntTop }), // 顶部
+                        new THREE.MeshPhongMaterial({ map: textures.tntBottom }), // 底部
+                        new THREE.MeshPhongMaterial({ map: textures.tntSide }), // 前侧
+                        new THREE.MeshPhongMaterial({ map: textures.tntSide })  // 后侧
+                    ];
+                } else {
+                    // 其他方块使用单一材质
+                    material = materials[Object.keys(blockTypes).find(key => blockTypes[key] === blockType)].clone();
+                }
+                
+                // 创建方块mesh
+                heldItemMesh = new THREE.Mesh(geometry, material);
+                
+                // 定位方块位置 - 放在右手前端
+                heldItemMesh.position.set(0, -1.2, -0.5);
+                
+                // 添加到右手
+                character.rightArm.add(heldItemMesh);
+            }
+        }
+
+        // 初始化手持物品
+        updateHeldItem();
+
         // 创建道具栏
         function createInventoryUI() {
             const inventoryElement = document.getElementById('inventory');
@@ -1379,6 +1467,9 @@
             
             // 调试信息
             console.log("物品栏已更新:", inventory.items.map(item => item.count));
+            
+            // 更新手持物品
+            updateHeldItem();
         }
 
         // 使用更高效的 FPS 计算方法
