@@ -56,9 +56,19 @@ import {
     initPageLoadMouseLock
 } from './controls.js';
 
+// 添加导入camera.js中的函数
+import {
+    createMainCamera,
+    createOverviewCamera,
+    createFrustumSystem,
+    createRenderSettings,
+    applyFrustumCulling,
+    handleWindowResize
+} from './camera.js';
+
 // 初始化场景、相机和渲染器
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = createMainCamera();
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const textureLoader = new THREE.TextureLoader();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -146,6 +156,18 @@ setupAdvancedMouseControls(controlsState, player, camera, document);
 // 设置物品快捷栏选择
 setupInventorySelection(inventory, character, blockTypes, textures, materials, document);
 
+// 创建俯视摄像机
+const overviewCamera = createOverviewCamera(worldSize);
+
+// 添加摄像机切换变量
+let activeCamera = camera; // 默认使用主摄像机
+
+// 在全局添加视锥系统
+const frustumSystem = createFrustumSystem();
+
+// 添加可配置的渲染距离参数
+const renderSettings = createRenderSettings();
+
 // 修改摄像机切换代码
 document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && (event.key === '2' || event.key === '3')) {
@@ -154,36 +176,6 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-// 在全局添加视锥和矩阵变量，放在初始化场景、相机和渲染器的代码之后
-const frustum = new THREE.Frustum();
-const tempMatrix = new THREE.Matrix4();
-const cameraViewMatrix = new THREE.Matrix4();
-const cameraProjectionMatrix = new THREE.Matrix4();
-
-// 添加可配置的渲染距离参数
-const renderSettings = {
-    normalRenderDistance: 25,
-    reducedRenderDistance: 15,
-    lookingDownThreshold: -0.3,
-    currentRenderDistance: 35
-};
-
-// 添加视锥检测函数
-function updateFrustum() {
-    // 更新投影视图矩阵
-    camera.updateMatrixWorld();
-    cameraViewMatrix.copy(camera.matrixWorldInverse);
-    cameraProjectionMatrix.copy(camera.projectionMatrix);
-
-    // 计算视锥
-    tempMatrix.multiplyMatrices(cameraProjectionMatrix, cameraViewMatrix);
-    frustum.setFromProjectionMatrix(tempMatrix);
-}
-
-// 检查方块是否在视锥内
-function isInViewFrustum(position) {
-    return frustum.containsPoint(position);
-}
 
 // 移除测试按键，只保留必要的键盘事件处理程序
 document.addEventListener('keydown', (event) => {
@@ -217,7 +209,7 @@ crosshairCtx.lineTo(20, 10);
 crosshairCtx.strokeStyle = 'white';
 crosshairCtx.stroke();
 
-// 在animate函数内添加视锥剔除和距离裁剪的逻辑
+// 在animate函数内更新视锥剔除逻辑
 function animate(currentTime) {
     requestAnimationFrame(animate);
 
@@ -228,54 +220,19 @@ function animate(currentTime) {
 
     updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys);
 
-    // 获取相机朝向向量
-    const lookDirection = new THREE.Vector3();
-    camera.getWorldDirection(lookDirection);
-
     // 只有在第一人称视角时才应用视锥剔除和距离裁剪
+    let lookDirection;
     if (activeCamera === camera) {
-        // 更新视锥
-        updateFrustum();
-
-        // 动态调整渲染距离，当看向地面时减小可见距离
-        if (lookDirection.y < renderSettings.lookingDownThreshold) {
-            // 根据向下看的角度程度动态调整渲染距离
-            const factor = Math.min(1, Math.abs(lookDirection.y / -1.0));
-            renderSettings.currentRenderDistance = renderSettings.normalRenderDistance -
-                (renderSettings.normalRenderDistance - renderSettings.reducedRenderDistance) * factor;
-        } else {
-            renderSettings.currentRenderDistance = renderSettings.normalRenderDistance;
-        }
-
-        // 应用视锥剔除和距离裁剪
-        const cameraPosition = camera.position.clone();
-        blockReferences.forEach(block => {
-            if (!block) return;
-
-            // 忽略天空，天空始终可见
-            if (block.isSky) {
-                block.visible = true;
-                return;
-            }
-
-            // 计算到相机的距离
-            const distanceToCamera = cameraPosition.distanceTo(block.position);
-
-            // 应用距离裁剪和视锥剔除
-            // 修改渲染条件：距离玩家6格以内的方块始终渲染，不考虑视锥
-            const isNearPlayer = distanceToCamera <= 6;
-            // 增加一个视锥外但在视锥边缘的判断
-            const isNearFrustum = distanceToCamera <= 25 &&
-                lookDirection.dot(new THREE.Vector3().subVectors(block.position, cameraPosition).normalize()) > 0.5;
-
-            block.visible = (isNearPlayer || isNearFrustum || isInViewFrustum(block.position)) &&
-                distanceToCamera <= renderSettings.currentRenderDistance;
-        });
+        lookDirection = applyFrustumCulling(camera, blockReferences, frustumSystem, renderSettings);
     } else {
         // 在俯视视角下，显示所有方块
         blockReferences.forEach(block => {
             if (block) block.visible = true;
         });
+        
+        // 获取相机朝向向量用于显示在调试面板
+        lookDirection = new THREE.Vector3();
+        activeCamera.getWorldDirection(lookDirection);
     }
 
     // 使用新的handleMouseActions函数处理鼠标操作
@@ -308,9 +265,9 @@ function animate(currentTime) {
         `FPS: ${fps}<br>` +
         `Frame Time: ${frameTime.toFixed(2)}ms<br>` +
         `Camera Position:<br>` +
-        `X: ${camera.position.x.toFixed(2)}<br>` +
-        `Y: ${camera.position.y.toFixed(2)}<br>` +
-        `Z: ${camera.position.z.toFixed(2)}<br>` +
+        `X: ${activeCamera.position.x.toFixed(2)}<br>` +
+        `Y: ${activeCamera.position.y.toFixed(2)}<br>` +
+        `Z: ${activeCamera.position.z.toFixed(2)}<br>` +
         `Look Direction:<br>` +
         `X: ${lookDirection.x.toFixed(2)}<br>` +
         `Y: ${lookDirection.y.toFixed(2)}<br>` +
@@ -353,32 +310,11 @@ function animate(currentTime) {
 
 // 窗口大小调整
 window.addEventListener('resize', () => {
-    const aspect = window.innerWidth / window.innerHeight;
-
-    // 更新主摄像机
-    camera.aspect = aspect;
-    camera.updateProjectionMatrix();
-
-    // 更新俯视摄像机
-    overviewCamera.aspect = aspect;
-    overviewCamera.updateProjectionMatrix();
-
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    handleWindowResize(camera, overviewCamera, renderer);
 });
 
 // 初始化道具栏
 createInventoryUI();
-
-// 在初始化场景部分后添加
-// 创建俯视摄像机
-const overviewCamera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
-// 设置摄像机位置 - 左上角45度俯视
-overviewCamera.position.set(-20, 30, -20);
-// 让摄像机指向世界中心
-overviewCamera.lookAt(new THREE.Vector3(worldSize / 2, 0, worldSize / 2));
-
-// 添加摄像机切换变量
-let activeCamera = camera; // 默认使用主摄像机
 
 // 开始动画循环
 animate();
