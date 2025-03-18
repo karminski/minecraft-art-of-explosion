@@ -705,12 +705,26 @@ function initAnimalSystem(scene, world, worldSize, textureLoader) {
     
     console.log(`已创建 ${animals.llamas.length} 只羊驼`);
     
+    // 添加初始数量记录和上次检查时间戳
+    const initialCounts = {
+        llamas: animals.llamas.length
+    };
+    let lastReplenishCheck = 0;
+    
     // 返回包含更新函数的对象
     return {
         animals: animals,
+        initialCounts: initialCounts, // 导出初始数量记录
         update: function(deltaTime, player = null) {
             try {
                 updateLlamas(animals.llamas, world, worldSize, deltaTime, player, animals);
+                
+                // 添加动物补充逻辑
+                const currentTime = performance.now();
+                if (currentTime - lastReplenishCheck > 2000) { // 每2秒检查一次
+                    replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts);
+                    lastReplenishCheck = currentTime;
+                }
             } catch (e) {
                 console.error("更新羊驼时发生错误:", e);
             }
@@ -718,9 +732,74 @@ function initAnimalSystem(scene, world, worldSize, textureLoader) {
     };
 }
 
+// 新增：动物补充功能
+function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts) {
+    // 检查羊驼数量是否低于初始值
+    if (animals.llamas.length < initialCounts.llamas) {
+        console.log(`检测到羊驼数量不足，当前: ${animals.llamas.length}，目标: ${initialCounts.llamas}`);
+        
+        // 计算需要补充的羊驼数量
+        const countToAdd = initialCounts.llamas - animals.llamas.length;
+        
+        // 一次最多补充5只，避免突然生成太多导致卡顿
+        const batchSize = Math.min(countToAdd, 5);
+        console.log(`本次将补充 ${batchSize} 只羊驼`);
+        
+        try {
+            // 创建新羊驼并添加到现有数组中
+            for (let i = 0; i < batchSize; i++) {
+                const llama = createLlamaModel(scene, textureLoader);
+                
+                // 在世界边缘生成新羊驼，而不是中心区域
+                const edgeOffset = 5;
+                // 随机选择一个边缘位置
+                let x, z;
+                const side = Math.floor(Math.random() * 4); // 0-3表示四个边
+                
+                switch (side) {
+                    case 0: // 北边
+                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
+                        z = edgeOffset;
+                        break;
+                    case 1: // 东边
+                        x = worldSize - edgeOffset - 1;
+                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
+                        break;
+                    case 2: // 南边
+                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
+                        z = worldSize - edgeOffset - 1;
+                        break;
+                    case 3: // 西边
+                        x = edgeOffset;
+                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
+                        break;
+                }
+                
+                // 确定安全的生成高度
+                const spawnY = findLlamaSpawnHeight(world, x, z, worldSize);
+                
+                // 设置新羊驼的位置和物理属性
+                llama.position.set(x + 0.5, spawnY, z + 0.5);
+                llama.velocity = new THREE.Vector3(0, 0, 0);
+                llama.gravity = 0.005;
+                llama.isGrounded = false;
+                
+                // 添加到场景和数组
+                scene.add(llama);
+                animals.llamas.push(llama);
+            }
+            
+            console.log(`成功补充 ${batchSize} 只羊驼，当前总数: ${animals.llamas.length}`);
+        } catch (e) {
+            console.error("补充羊驼时出错:", e);
+        }
+    }
+}
+
 // 导出函数
 export {
     createLlamaModel,
     placeLlamasRandomly,
-    initAnimalSystem
+    initAnimalSystem,
+    replenishAnimals // 导出新函数
 };

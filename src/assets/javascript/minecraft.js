@@ -224,6 +224,12 @@ const animalSystem = initAnimalSystem(scene, world, worldSize, textureLoader);
 // 添加调试信息以确认动物系统初始化
 console.log("动物系统初始化完成", animalSystem);
 
+// 将animalSystem添加到全局对象，便于调试和访问
+window.animalSystem = animalSystem;
+
+// 添加控制台日志，显示初始动物数量记录
+console.log("动物初始数量记录:", animalSystem.initialCounts);
+
 // 在animate函数内添加动物更新逻辑
 function animate(currentTime) {
     requestAnimationFrame(animate);
@@ -245,6 +251,16 @@ function animate(currentTime) {
     // 添加：更新动物系统（传递时间增量）
     if (animalSystem && typeof animalSystem.update === 'function') {
         animalSystem.update(animalDeltaTime, player);
+        
+        // 添加：在调试面板中显示动物数量信息
+        if (animalSystem.animals && animalSystem.animals.llamas) {
+            const debugPanel = document.getElementById('debug-panel');
+            if (debugPanel) {
+                const animalInfo = `羊驼数量: ${animalSystem.animals.llamas.length}/${animalSystem.initialCounts.llamas}`;
+                // 将此信息添加到调试面板中
+                debugPanel.innerHTML += `<br>${animalInfo}`;
+            }
+        }
     } else {
         console.error("动物系统或更新函数不存在!");
     }

@@ -52,7 +52,7 @@ function isInViewFrustum(position, frustumSystem) {
 function createRenderSettings() {
     return {
         normalRenderDistance: 25,
-        reducedRenderDistance: 15,
+        reducedRenderDistance: 20,
         lookingDownThreshold: -0.3,
         currentRenderDistance: 35
     };
