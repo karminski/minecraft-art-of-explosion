@@ -102,7 +102,8 @@
         空格 - 跳跃<br>
         左键 - 矿镐(挖方块)/放方块<br>
         右键 - 暂无功能<br>
-        按M锁定鼠标<br>
+        ESC - 释放鼠标<br>
+        点击 - 锁定鼠标<br>
         1-8 - 切换道具<br>
         <br>
         调试按键:<br>
@@ -1801,6 +1802,28 @@
 
         // 开始动画循环
         animate();
+
+        // 添加页面加载完成后自动锁定鼠标的逻辑
+        window.addEventListener('load', () => {
+            // 在页面加载后稍微延迟锁定，以确保所有资源都已加载
+            setTimeout(() => {
+                document.body.requestPointerLock();
+            }, 1000);
+        });
+
+        // 保留现有的指针锁定变更事件处理
+        document.addEventListener('pointerlockchange', () => {
+            mouseLock = document.pointerLockElement === document.body;
+            
+            // 如果鼠标解锁了，添加点击事件重新锁定
+            if (!mouseLock) {
+                const clickToLock = () => {
+                    document.body.requestPointerLock();
+                    document.removeEventListener('click', clickToLock);
+                };
+                document.addEventListener('click', clickToLock);
+            }
+        });
     </script>
 </body>
 
