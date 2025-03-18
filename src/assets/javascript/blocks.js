@@ -13,6 +13,9 @@ const blockTypes = {
 // 存储TNT定时器
 const tntTimers = {};
 
+// 添加共享几何体
+let sharedGeometry = null;
+
 // 初始化块系统
 function initBlockSystem(scene, textureLoader) {
     // 加载纹理
@@ -50,12 +53,16 @@ function initBlockSystem(scene, textureLoader) {
         bedrock: new THREE.MeshPhongMaterial({ map: textures.bedrock, color: 0x333333 })  // 添加基岩材质
     };
 
+    // 创建共享几何体
+    sharedGeometry = new THREE.BoxGeometry(1, 1, 1);
+
     return { textures, materials, explosionTextures };
 }
 
 // 创建方块
 function createBlock(scene, x, y, z, type, materials, textures, blockReferences, inventory) {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    // 使用共享几何体代替重复创建
+    const geometry = sharedGeometry;
     if (type === blockTypes.tnt) {
         // 创建TNT的六面材质
         const tntMaterials = [
@@ -120,7 +127,7 @@ function highlightBlock(blockReferences, camera) {
     });
 
     const raycaster = new THREE.Raycaster();
-    raycaster.far = 5;
+    raycaster.far = 6;
     raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
     // 只检测视野范围内且可见的方块
@@ -179,8 +186,8 @@ function highlightBlock(blockReferences, camera) {
 // 破坏方块
 function breakBlock(scene, world, blockReferences, camera, inventory, blockTypes, updateInventoryUI, character) {
     const raycaster = new THREE.Raycaster();
-    // 设置射线检测的长度为5个方块长度
-    raycaster.far = 5;
+    // 设置射线检测的长度为6个方块长度
+    raycaster.far = 6;
     raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
     // 只检测视野范围内的方块
@@ -241,8 +248,8 @@ function breakBlock(scene, world, blockReferences, camera, inventory, blockTypes
 // 放置方块
 function placeBlock(scene, world, blockReferences, camera, inventory, blockTypes, worldSize, player, createBlock, updateInventoryUI, character, textures, materials) {
     const raycaster = new THREE.Raycaster();
-    // 设置射线检测的长度为5个方块长度
-    raycaster.far = 5;
+    // 设置射线检测的长度为6个方块长度
+    raycaster.far = 6;
     raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
 
     // 只检测视野范围内的方块

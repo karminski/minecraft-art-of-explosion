@@ -141,7 +141,7 @@ function createLlamaModel(scene, textureLoader) {
 function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
     const llamas = [];
     // 减少生成数量，便于调试
-    const count = 40; // 固定生成3只进行测试
+    const count = 120; // 固定生成3只进行测试
     
     console.log(`尝试生成 ${count} 只羊驼...`);
     console.log(`世界大小: ${worldSize}`);
@@ -152,10 +152,12 @@ function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
             // 创建一只新羊驼，传入textureLoader
             const llama = createLlamaModel(scene, textureLoader);
             
-            // 指定固定位置进行测试
-            // 使用世界中心区域生成
-            const x = Math.floor(worldSize / 2) - 5 + i; 
-            const z = Math.floor(worldSize / 2) - 5 + i;
+            // 设置安全边界距离，避免生成在世界边缘
+            const safeMargin = 5;
+            
+            // 在安全范围内随机生成坐标
+            const x = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
+            const z = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
             
             console.log(`生成羊驼 #${i} 在坐标: x=${x}, z=${z}`);
             
