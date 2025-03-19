@@ -456,8 +456,8 @@ function initAnimalSystem(scene, world, worldSize, textureLoader) {
 function initializeAnimals(scene, world, worldSize, textureLoader) {
     // 创建一个基本的动物系统
     const tempSystem = {
-        animals: { llamas: [] },
-        initialCounts: { llamas: 0 },
+        animals: { llamas: [], pigs: [] },
+        initialCounts: { llamas: 0, pigs: 0 },
         initialized: true,
         update: function(deltaTime, player) {
             console.log("动物系统正在加载中...");
@@ -468,8 +468,11 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
     window.animalSystem = tempSystem;
     
     // 导入所有动物类型
-    import('./animal_llama.js').then(({ LlamaAnimal }) => {
-        console.log("开始初始化羊驼...");
+    Promise.all([
+        import('./animal_llama.js'),
+        import('./animal_pig.js')
+    ]).then(([{ LlamaAnimal }, { PigAnimal }]) => {
+        console.log("开始初始化动物...");
         console.log("blockTypes 状态:", window.blockTypes ? "已定义" : "未定义");
         
         if (!window.blockTypes) {
@@ -479,13 +482,18 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
         
         // 创建动物容器
         let animals = {
-            llamas: [] // 开始只有羊驼
+            llamas: [], // 羊驼
+            pigs: []    // 猪
         };
         
         try {
             // 放置羊驼
             animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, 120);
             console.log(`已创建 ${animals.llamas.length} 只羊驼`);
+            
+            // 放置猪
+            animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 100);
+            console.log(`已创建 ${animals.pigs.length} 只猪`);
         } catch (e) {
             console.error("生成动物时发生错误:", e);
             console.error(e.stack); // 打印完整堆栈
@@ -493,7 +501,8 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
         
         // 记录初始数量
         const initialCounts = {
-            llamas: animals.llamas.length
+            llamas: animals.llamas.length,
+            pigs: animals.pigs.length
         };
         
         let lastReplenishCheck = 0;
@@ -529,18 +538,23 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
 // 动物补充功能
 function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts) {
     // 动态导入所有动物类
-    import('./animal_llama.js').then(({ LlamaAnimal }) => {
+    Promise.all([
+        import('./animal_llama.js'),
+        import('./animal_pig.js')
+    ]).then(([{ LlamaAnimal }, { PigAnimal }]) => {
         // 检查羊驼数量
-    if (animals.llamas.length < initialCounts.llamas) {
-        const countToAdd = initialCounts.llamas - animals.llamas.length;
+        if (animals.llamas.length < initialCounts.llamas) {
+            const countToAdd = initialCounts.llamas - animals.llamas.length;
             LlamaAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd);
         }
         
+        // 检查猪的数量
+        if (animals.pigs.length < initialCounts.pigs) {
+            const countToAdd = initialCounts.pigs - animals.pigs.length;
+            PigAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd);
+        }
+        
         // 未来可以在这里添加其他动物的补充逻辑
-        // if (animals.cows.length < initialCounts.cows) {
-        //    const countToAdd = initialCounts.cows - animals.cows.length;
-        //    CowAnimal.replenish(...);
-        // }
     });
 }
 

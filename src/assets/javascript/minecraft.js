@@ -249,8 +249,9 @@ function animate(currentTime) {
             const debugPanel = document.getElementById('debug-panel');
             if (debugPanel) {
                 const animalInfo = `羊驼数量: ${window.animalSystem.animals.llamas.length}/${window.animalSystem.initialCounts.llamas}`;
+                const pigInfo = `猪数量: ${window.animalSystem.animals.pigs ? window.animalSystem.animals.pigs.length : 0}/${window.animalSystem.initialCounts.pigs || 0}`;
                 // 将此信息添加到调试面板中
-                debugPanel.innerHTML += `<br>${animalInfo}`;
+                debugPanel.innerHTML += `<br>${animalInfo}<br>${pigInfo}`;
             }
         }
     } else {
