@@ -67,7 +67,7 @@ class PigAnimal extends AnimalBase {
         
         // 头部整体
         head.add(headMain, snout);
-        head.position.set(0.0, 0.6, -0.8);
+        head.position.set(0.0, -0.7, -0.8);
         
         // 身体（圆胖）
         const bodyGeometry = new THREE.BoxGeometry(1.0, 0.8, 1.6);
@@ -80,10 +80,10 @@ class PigAnimal extends AnimalBase {
             left: [28/64, 1 - 16/32, 36/64, 1 - 32/32]
         });
         const body = new THREE.Mesh(bodyGeometry, pigMaterial);
-        body.position.set(0, 0.4, 0.2);
+        body.position.set(0, -0.9, 0.2);
         
         // 创建腿部
-        function createLeg(x, z) {
+        function createLeg(x, z, name) {
             const legGeometry = new THREE.BoxGeometry(0.4, 0.6, 0.4);
             mapBlockUVs(legGeometry, {
                 top: [4/64, 1 - 16/32, 8/64, 1 - 20/32],
@@ -95,22 +95,22 @@ class PigAnimal extends AnimalBase {
             });
             
             const leg = new THREE.Mesh(legGeometry, pigMaterial);
-            leg.position.set(x, -0.3, z);
+            leg.position.set(x, -1.6, z);
+            leg.name = name;  // 添加名称标识
             return leg;
         }
         
         // 腿部位置
-        const legFrontLeft = createLeg(-0.3, -0.3);
-        const legFrontRight = createLeg(0.3, -0.3);
-        const legBackLeft = createLeg(-0.3, 0.9);
-        const legBackRight = createLeg(0.3, 0.9);
+        const legFrontLeft = createLeg(-0.3, -0.3, 'frontLeftLeg');
+        const legFrontRight = createLeg(0.3, -0.3, 'frontRightLeg');
+        const legBackLeft = createLeg(-0.3, 0.9, 'backLeftLeg');
+        const legBackRight = createLeg(0.3, 0.9, 'backRightLeg');
         
         // 添加所有部分到猪组
         pigGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight);
         
         // 设置整体比例和位置
         pigGroup.scale.set(0.5, 0.5, 0.5); // 猪比羊驼小一些
-        pigGroup.position.y = 0.5; // 稍微降低高度
         
         // 添加默认移动速度和动画参数
         pigGroup.defaultSpeed = this.defaultSpeed;
@@ -138,38 +138,27 @@ class PigAnimal extends AnimalBase {
             // 计算腿部摆动角度(使用正弦函数)
             const swingAngle = Math.sin(animal.animProps.animationTime) * animal.animProps.maxSwingAngle;
             
-            // 获取四条腿的引用
-            const legs = animal.children.filter(child => 
-                child.position.y === -0.3 && 
-                Math.abs(child.position.x) === 0.3
-            );
+            // 通过名称获取四条腿
+            const frontLeftLeg = animal.getObjectByName('frontLeftLeg');
+            const frontRightLeg = animal.getObjectByName('frontRightLeg');
+            const backLeftLeg = animal.getObjectByName('backLeftLeg');
+            const backRightLeg = animal.getObjectByName('backRightLeg');
             
-            if (legs.length === 4) {
-                // 获取各条腿的引用
-                const frontLeftLeg = legs.find(leg => leg.position.x === -0.3 && leg.position.z === -0.4);
-                const frontRightLeg = legs.find(leg => leg.position.x === 0.3 && leg.position.z === -0.4);
-                const backLeftLeg = legs.find(leg => leg.position.x === -0.3 && leg.position.z === 0.8);
-                const backRightLeg = legs.find(leg => leg.position.x === 0.3 && leg.position.z === 0.8);
-                
-                // 对角腿同步摆动（类似于四足动物的行走模式）
-                if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
-                if (backRightLeg) backRightLeg.rotation.x = swingAngle;
-                
-                if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
-                if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
-            }
+            // 对角腿同步摆动
+            if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
+            if (backRightLeg) backRightLeg.rotation.x = swingAngle;
+            
+            if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
+            if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
         } else {
             // 如果猪静止，重置腿部位置
             animal.animProps.animationTime = 0;
             
-            // 获取腿部引用并重置位置
-            const legs = animal.children.filter(child => 
-                child.position.y === -0.3 && 
-                Math.abs(child.position.x) === 0.3
-            );
-            
-            legs.forEach(leg => {
-                leg.rotation.x = 0;
+            // 获取所有腿并重置
+            const legs = ['frontLeftLeg', 'frontRightLeg', 'backLeftLeg', 'backRightLeg'];
+            legs.forEach(legName => {
+                const leg = animal.getObjectByName(legName);
+                if (leg) leg.rotation.x = 0;
             });
         }
     }

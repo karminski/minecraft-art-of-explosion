@@ -114,7 +114,7 @@ class LlamaAnimal extends AnimalBase {
         body.rotation.x = Math.PI / 2; // 关键！垂直放置身体
         
         // 腿部 (基于29, 29区域的纹理，每条腿4x14x4大小)
-        function createLeg(x, z) {
+        function createLeg(x, z, name) {
             const legGeometry = new THREE.BoxGeometry(0.8, 2.8, 0.8);
             legGeometry.translate(0, -1.4, 0); // 移动半个高度
             
@@ -128,21 +128,21 @@ class LlamaAnimal extends AnimalBase {
             });
             const leg = new THREE.Mesh(legGeometry, llamaMaterial);
             leg.position.set(x, -0.4, z);
+            leg.name = name;  // 添加名称标识
             return leg;
         }
         
         // 腿部位置基于ModelLlama.java的设置
-        const legFrontLeft = createLeg(-0.5, -0.8);
-        const legFrontRight = createLeg(0.5, -0.8);
-        const legBackLeft = createLeg(-0.5, 1.2);
-        const legBackRight = createLeg(0.5, 1.2);
+        const legFrontLeft = createLeg(-0.5, -0.8, 'frontLeftLeg');
+        const legFrontRight = createLeg(0.5, -0.8, 'frontRightLeg');
+        const legBackLeft = createLeg(-0.5, 1.2, 'backLeftLeg');
+        const legBackRight = createLeg(0.5, 1.2, 'backRightLeg');
         
         // 添加所有部分到羊驼组
         llamaGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight);
         
         // 设置整体比例和位置
         llamaGroup.scale.set(0.4, 0.4, 0.4); // 调整为游戏比例
-        llamaGroup.position.y = 0.6;
         
         // 添加默认移动速度和动画参数
         llamaGroup.defaultSpeed = this.defaultSpeed;
@@ -170,38 +170,27 @@ class LlamaAnimal extends AnimalBase {
             // 计算腿部摆动角度(使用正弦函数)
             const swingAngle = Math.sin(animal.animProps.animationTime) * animal.animProps.maxSwingAngle;
             
-            // 获取四条腿的引用 - 修正查找条件，y位置为-0.4
-            const legs = animal.children.filter(child => 
-                child.position.y === -0.4 && 
-                Math.abs(child.position.x) === 0.5
-            );
+            // 通过名称获取四条腿
+            const frontLeftLeg = animal.getObjectByName('frontLeftLeg');
+            const frontRightLeg = animal.getObjectByName('frontRightLeg');
+            const backLeftLeg = animal.getObjectByName('backLeftLeg');
+            const backRightLeg = animal.getObjectByName('backRightLeg');
             
-            if (legs.length === 4) {
-                // 获取各条腿的引用
-                const frontLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === -0.8);
-                const frontRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === -0.8);
-                const backLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === 1.2);
-                const backRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === 1.2);
-                
-                // 对角腿同步摆动（类似于四足动物的跑步模式）
-                if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
-                if (backRightLeg) backRightLeg.rotation.x = swingAngle;
-                
-                if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
-                if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
-            }
+            // 对角腿同步摆动（类似于四足动物的跑步模式）
+            if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
+            if (backRightLeg) backRightLeg.rotation.x = swingAngle;
+            
+            if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
+            if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
         } else {
             // 如果羊驼静止，重置腿部位置
             animal.animProps.animationTime = 0;
             
-            // 获取腿部引用并重置位置 - 同样修正y位置为-0.4
-            const legs = animal.children.filter(child => 
-                child.position.y === -0.4 && 
-                Math.abs(child.position.x) === 0.5
-            );
-            
-            legs.forEach(leg => {
-                leg.rotation.x = 0;
+            // 获取所有腿并重置
+            const legs = ['frontLeftLeg', 'frontRightLeg', 'backLeftLeg', 'backRightLeg'];
+            legs.forEach(legName => {
+                const leg = animal.getObjectByName(legName);
+                if (leg) leg.rotation.x = 0;
             });
         }
     }
