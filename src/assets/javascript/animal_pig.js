@@ -53,44 +53,45 @@ class PigAnimal extends AnimalBase {
         const headMain = new THREE.Mesh(headGeometry, pigMaterial);
         
         // 吻部（鼻子）
-        const snoutGeometry = new THREE.BoxGeometry(0.6, 0.5, 0.3);
+        const snoutGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.1);
         mapBlockUVs(snoutGeometry, {
-            top: [16/64, 1 - 16/32, 22/64, 1 - 17/32],
-            bottom: [22/64, 1 - 16/32, 28/64, 1 - 17/32],
-            front: [17/64, 1 - 17/32, 23/64, 1 - 20/32],
+            top: [17/64, 1 - 16/32, 21/64, 1 - 17/32],
+            bottom: [21/64, 1 - 16/32, 25/64, 1 - 17/32],
+            front: [17/64, 1 - 17/32, 21/64, 1 - 20/32],
             back: [0/64, 1 - 0/32, 0/64, 1 - 0/32], // 不可见
-            right: [16/64, 1 - 17/32, 17/64, 1 - 20/32],
-            left: [23/64, 1 - 17/32, 24/64, 1 - 20/32]
+            right: [21/64, 1 - 17/32, 22/64, 1 - 20/32],
+            left: [16/64, 1 - 17/32, 17/64, 1 - 20/32]
         });
         const snout = new THREE.Mesh(snoutGeometry, pigMaterial);
-        snout.position.set(0, 0, -0.45);
+        snout.position.set(0, -0.1, -0.5);
         
+        // 头部整体
         head.add(headMain, snout);
-        head.position.set(0, 0.5, -0.5);
+        head.position.set(0.0, 0.6, -0.8);
         
         // 身体（圆胖）
         const bodyGeometry = new THREE.BoxGeometry(1.0, 0.8, 1.6);
         mapBlockUVs(bodyGeometry, {
-            top: [28/64, 1 - 8/32, 44/64, 1 - 16/32],
-            bottom: [44/64, 1 - 8/32, 60/64, 1 - 16/32],
-            front: [28/64, 1 - 16/32, 36/64, 1 - 20/32],
-            back: [44/64, 1 - 16/32, 52/64, 1 - 20/32],
-            right: [36/64, 1 - 16/32, 44/64, 1 - 20/32],
-            left: [52/64, 1 - 16/32, 60/64, 1 - 20/32]
+            top: [36/64, 1 - 16/32, 46/64, 1 - 32/32],
+            bottom: [56/64, 1 - 16/32, 64/64, 1 - 32/32],
+            front: [36/64, 1 - 8/32, 46/64, 1 - 16/32],
+            back: [46/64, 1 - 8/32, 56/64, 1 - 16/32],
+            right: [46/64, 1 - 16/32, 56/64, 1 - 32/32],
+            left: [28/64, 1 - 16/32, 36/64, 1 - 32/32]
         });
         const body = new THREE.Mesh(bodyGeometry, pigMaterial);
         body.position.set(0, 0.4, 0.2);
         
         // 创建腿部
         function createLeg(x, z) {
-            const legGeometry = new THREE.BoxGeometry(0.3, 0.6, 0.3);
+            const legGeometry = new THREE.BoxGeometry(0.4, 0.6, 0.4);
             mapBlockUVs(legGeometry, {
-                top: [0/64, 1 - 20/32, 4/64, 1 - 16/32],
-                bottom: [4/64, 1 - 20/32, 8/64, 1 - 16/32],
-                front: [0/64, 1 - 16/32, 4/64, 1 - 24/32],
-                back: [4/64, 1 - 16/32, 8/64, 1 - 24/32],
-                right: [8/64, 1 - 16/32, 12/64, 1 - 24/32],
-                left: [12/64, 1 - 16/32, 16/64, 1 - 24/32]
+                top: [4/64, 1 - 16/32, 8/64, 1 - 20/32],
+                bottom: [8/64, 1 - 16/32, 12/64, 1 - 20/32],
+                front: [4/64, 1 - 20/32, 8/64, 1 - 26/32],
+                back: [12/64, 1 - 20/32, 16/64, 1 - 26/32],
+                right: [8/64, 1 - 20/32, 12/64, 1 - 26/32],
+                left: [0/64, 1 - 20/32, 4/64, 1 - 26/32]
             });
             
             const leg = new THREE.Mesh(legGeometry, pigMaterial);
@@ -99,10 +100,10 @@ class PigAnimal extends AnimalBase {
         }
         
         // 腿部位置
-        const legFrontLeft = createLeg(-0.3, -0.4);
-        const legFrontRight = createLeg(0.3, -0.4);
-        const legBackLeft = createLeg(-0.3, 0.8);
-        const legBackRight = createLeg(0.3, 0.8);
+        const legFrontLeft = createLeg(-0.3, -0.3);
+        const legFrontRight = createLeg(0.3, -0.3);
+        const legBackLeft = createLeg(-0.3, 0.9);
+        const legBackRight = createLeg(0.3, 0.9);
         
         // 添加所有部分到猪组
         pigGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight);
