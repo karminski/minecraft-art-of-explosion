@@ -444,9 +444,14 @@ function createAnimalDebris(scene, animal, explosionCenter, explosionDebris) {
     // 将动物标记为碎片
     animal.isDebris = true;
     
+    // 创建临时副本，用于飞行动画，而不是直接使用原动物对象
+    const animalDebris = animal.clone();
+    animalDebris.position.copy(originalPosition);
+    scene.add(animalDebris);
+    
     // 将碎片添加到数组中以便更新
     explosionDebris.push({
-        mesh: animal,
+        mesh: animalDebris,
         velocity: direction.multiplyScalar(speed),
         rotationSpeed: rotationSpeed,
         lifeTime: 120 + Math.floor(Math.random() * 60), // 120-180帧的存在时间
@@ -597,8 +602,11 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
                     }
                 });
                 
-                // 从动物列表中移除被炸掉并转为碎片的动物
+                // 从动物列表中移除被炸掉的动物
                 explodedAnimals.forEach(index => {
+                    // 在从数组中移除前，确保从场景中删除模型
+                    scene.remove(animals[animalType][index]);
+                    // 从数组中移除引用
                     animals[animalType].splice(index, 1);
                 });
             }
