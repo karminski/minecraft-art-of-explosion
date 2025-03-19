@@ -16,7 +16,8 @@ function initControlsState() {
         isPlacingBlock: false,
         lastRaycastTime: 0,
         raycastInterval: 100,
-        blockActionCooldown: 250
+        blockActionCooldown: 250,
+        isPaused: false
     };
 }
 
@@ -234,6 +235,65 @@ function initPageLoadMouseLock(window) {
     // }
 }
 
+// 创建暂停界面
+function createPauseOverlay() {
+    const pauseOverlay = document.createElement('div');
+    pauseOverlay.id = 'pause-overlay';
+    pauseOverlay.style.position = 'absolute';
+    pauseOverlay.style.top = '0';
+    pauseOverlay.style.left = '0';
+    pauseOverlay.style.width = '100%';
+    pauseOverlay.style.height = '100%';
+    pauseOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    pauseOverlay.style.display = 'none';
+    pauseOverlay.style.justifyContent = 'center';
+    pauseOverlay.style.alignItems = 'center';
+    pauseOverlay.style.zIndex = '1000';
+    pauseOverlay.style.fontSize = '3rem';
+    pauseOverlay.style.color = 'white';
+    pauseOverlay.style.fontFamily = 'Arial, sans-serif';
+    pauseOverlay.innerHTML = '<div>游戏已暂停<br><span style="font-size: 1.5rem">按 P 键恢复</span></div>';
+    document.body.appendChild(pauseOverlay);
+    return pauseOverlay;
+}
+
+// 暂停/恢复切换函数 - 修改为使用controlsState
+function togglePause(controlsState, pauseOverlay) {
+    // 切换暂停状态
+    controlsState.isPaused = !controlsState.isPaused;
+    
+    // 更新暂停界面显示
+    pauseOverlay.style.display = controlsState.isPaused ? 'flex' : 'none';
+    
+    // 如果暂停，则暂停所有动物的动画
+    if (window.animalSystem && window.animalSystem.animals) {
+        // 设置所有羊驼的暂停状态
+        if (window.animalSystem.animals.llamas) {
+            window.animalSystem.animals.llamas.forEach(llama => {
+                llama.pauseAnimation = controlsState.isPaused;
+            });
+        }
+        
+        // 设置所有猪的暂停状态
+        if (window.animalSystem.animals.pigs) {
+            window.animalSystem.animals.pigs.forEach(pig => {
+                pig.pauseAnimation = controlsState.isPaused;
+            });
+        }
+    }
+    
+    console.log(`游戏${controlsState.isPaused ? '已暂停' : '已恢复'}`);
+}
+
+// 设置暂停控制
+function setupPauseControl(controlsState, pauseOverlay, document) {
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'p' || event.key === 'P') {
+            togglePause(controlsState, pauseOverlay);
+        }
+    });
+}
+
 // 导出所有控制函数
 export {
     initControlsState,
@@ -246,5 +306,8 @@ export {
     breakBlockWithDebounce,
     placeBlockWithDebounce,
     handleMouseActions,
-    initPageLoadMouseLock
+    initPageLoadMouseLock,
+    togglePause,
+    createPauseOverlay,
+    setupPauseControl
 };

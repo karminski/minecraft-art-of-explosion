@@ -53,7 +53,10 @@ import {
     breakBlockWithDebounce,
     placeBlockWithDebounce,
     handleMouseActions,
-    initPageLoadMouseLock
+    initPageLoadMouseLock,
+    togglePause,
+    createPauseOverlay,
+    setupPauseControl
 } from './controls.js';
 
 // 添加导入camera.js中的函数
@@ -151,6 +154,12 @@ setCharacterPartsOpacity(character, true);
 // 替换全局键鼠控制变量为控制状态对象
 const controlsState = initControlsState();
 
+// 创建暂停界面
+const pauseOverlay = createPauseOverlay();
+
+// 设置暂停控制
+setupPauseControl(controlsState, pauseOverlay, document);
+
 // 移除原始的鼠标控制代码，使用新函数代替
 setupMouseControls(controlsState, document);
 
@@ -177,32 +186,6 @@ const frustumSystem = createFrustumSystem();
 
 // 添加可配置的渲染距离参数
 const renderSettings = createRenderSettings();
-
-// 修改摄像机切换代码
-document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && (event.key === '2' || event.key === '3')) {
-        const newCamera = setupCameraToggle(character, camera, overviewCamera, { ctrlKey: true, key: event.key });
-        if (newCamera) activeCamera = newCamera;
-    }
-});
-
-
-// 移除测试按键，只保留必要的键盘事件处理程序
-document.addEventListener('keydown', (event) => {
-    if (event.key >= '1' && event.key <= '8') {
-        const index = parseInt(event.key) - 1;
-        if (index >= 0 && index < inventory.items.length) {
-            inventory.selectedIndex = index;
-            updateInventoryUI(character, blockTypes, textures, materials);
-        }
-    } else if (event.key === 'm' && !controlsState.mouseLock) {
-        controlsState.mouseLock = true;
-        document.documentElement.requestPointerLock();
-    }
-});
-
-// 初始化手持物品
-updateHeldItem(character, blockTypes, textures, materials);
 
 // 使用更高效的 FPS 计算方法
 let lastFrameTime = performance.now();
@@ -237,7 +220,22 @@ function animate(currentTime) {
     const fps = Math.round(1000 / frameTime);
     lastFrameTime = currentTime;
 
-    // 添加：确保传递给动物系统的是有效数值
+    // 在暂停状态下，只更新基本UI但不更新游戏逻辑
+    if (controlsState.isPaused) {
+        // 更新调试面板，显示暂停状态
+        const debugPanel = document.getElementById('debug-panel');
+        debugPanel.innerHTML = 
+            `FPS: ${fps}<br>` +
+            `Frame Time: ${frameTime.toFixed(2)}ms<br>` +
+            `<span style="color: red; font-weight: bold">游戏已暂停</span>`;
+        
+        // 在暂停状态下仍然渲染场景，但不更新任何对象
+        renderer.render(scene, activeCamera);
+        return;
+    }
+
+    // 以下是游戏正常运行时的代码（只在未暂停时执行）
+    // 确保传递给动物系统的是有效数值
     const animalDeltaTime = frameTime;
     
     // 修改：更新动物系统（检查全局对象而不是局部变量）
@@ -422,3 +420,4 @@ window.handleTNTExplosion = function(x, y, z) {
         textures
     );
 };
+
