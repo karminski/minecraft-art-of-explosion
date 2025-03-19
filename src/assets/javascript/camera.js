@@ -111,45 +111,44 @@ function applyFrustumCulling(camera, blockReferences, frustumSystem, renderSetti
     
     // 处理动物的视锥剔除和距离裁剪
     if (animals) {
-        // 处理所有羊驼
-        if (animals.llamas && Array.isArray(animals.llamas)) {
-            animals.llamas.forEach(llama => {
-                if (!llama) return;
-                
-                // 计算到相机的距离
-                const distanceToCamera = cameraPosition.distanceTo(llama.position);
-                
-                // 应用距离裁剪和视锥剔除 - 为动物使用略大的近距离阈值
-                const isNearPlayer = distanceToCamera <= 8; // 动物比方块大，使用更大的近距离阈值
-                const isNearFrustum = distanceToCamera <= 25 &&
-                    lookDirection.dot(new THREE.Vector3().subVectors(llama.position, cameraPosition).normalize()) > 0.4;
-                
-                // 确定动物是否应该可见
-                const shouldBeVisible = (isNearPlayer || isNearFrustum || isInViewFrustum(llama.position, frustumSystem)) &&
-                    distanceToCamera <= renderSettings.currentRenderDistance * 0.8;
-                
-                // 强制设置羊驼及其所有子对象的可见性 - 这是解决问题的关键
-                llama.traverse(function(child) {
-                    child.visible = shouldBeVisible;
+        // 遍历所有动物类型并应用视锥剔除
+        Object.keys(animals).forEach(animalType => {
+            if (animals[animalType] && Array.isArray(animals[animalType])) {
+                animals[animalType].forEach(animal => {
+                    if (!animal) return;
+                    
+                    // 计算到相机的距离
+                    const distanceToCamera = cameraPosition.distanceTo(animal.position);
+                    
+                    // 应用距离裁剪和视锥剔除 - 为动物使用略大的近距离阈值
+                    const isNearPlayer = distanceToCamera <= 8; // 动物比方块大，使用更大的近距离阈值
+                    const isNearFrustum = distanceToCamera <= 25 &&
+                        lookDirection.dot(new THREE.Vector3().subVectors(animal.position, cameraPosition).normalize()) > 0.4;
+                    
+                    // 确定动物是否应该可见
+                    const shouldBeVisible = (isNearPlayer || isNearFrustum || isInViewFrustum(animal.position, frustumSystem)) &&
+                        distanceToCamera <= renderSettings.currentRenderDistance * 0.8;
+                    
+                    // 强制设置动物及其所有子对象的可见性
+                    animal.traverse(function(child) {
+                        child.visible = shouldBeVisible;
+                    });
+                    
+                    // 如果超出视距，可以考虑减少动画更新频率，但保持物理运动计算
+                    if (!shouldBeVisible && animal.updateFrequencyCounter === undefined) {
+                        animal.updateFrequencyCounter = 0;
+                    }
+                    
+                    // 如果不可见，只有每X帧更新一次动画，但位置计算保持
+                    if (!shouldBeVisible) {
+                        animal.updateFrequencyCounter = (animal.updateFrequencyCounter + 1) % 10;
+                        animal.pauseAnimation = animal.updateFrequencyCounter !== 0;
+                    } else {
+                        animal.pauseAnimation = false;
+                    }
                 });
-                
-                // 如果超出视距，可以考虑减少动画更新频率，但保持物理运动计算
-                if (!shouldBeVisible && llama.updateFrequencyCounter === undefined) {
-                    llama.updateFrequencyCounter = 0;
-                }
-                
-                // 如果不可见，只有每X帧更新一次动画，但位置计算保持
-                if (!shouldBeVisible) {
-                    llama.updateFrequencyCounter = (llama.updateFrequencyCounter + 1) % 10;
-                    llama.pauseAnimation = llama.updateFrequencyCounter !== 0;
-                } else {
-                    llama.pauseAnimation = false;
-                }
-            });
-        }
-        
-        // 如果还有其他类型的动物，可以在此处添加类似的逻辑
-        // if (animals.otherAnimalType) { ... }
+            }
+        });
     }
     
     return lookDirection;

@@ -10,7 +10,7 @@ class PigAnimal extends AnimalBase {
         
         // 猪特有的参数
         this.type = 'pig';
-        this.defaultSpeed = 0.004; // 猪的速度比羊驼慢一点
+        this.defaultSpeed = 0.03; // 猪的速度比羊驼慢一点
         this.animProps = {
             animationTime: 0,
             walkingSpeed: 0.15,
