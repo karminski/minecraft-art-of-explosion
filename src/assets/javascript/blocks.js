@@ -553,50 +553,55 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
     }
 
     // 检查爆炸范围内的动物
-    if (animals && animals.llamas && animals.llamas.length > 0) {
-        // 记录被炸到的动物索引
-        const explodedAnimals = [];
+    if (animals) {
+        // 计算爆炸中心点
+        const explosionCenter = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
         // 设置爆炸检测半径（与方块爆炸半径保持一致）
         const animalExplosionRadius = 3.5;
         
-        // 计算爆炸中心点
-        const explosionCenter = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
-        
-        // 检查每只羊驼是否在爆炸范围内
-        animals.llamas.forEach((llama, index) => {
-            // 跳过已经是碎片的动物
-            if (llama.isDebris) return;
-            
-            // 计算羊驼到爆炸中心的距离
-            const distance = llama.position.distanceTo(explosionCenter);
-            
-            // 如果距离小于爆炸半径，则认为羊驼被炸到
-            if (distance <= animalExplosionRadius) {
-                // 将索引添加到被炸动物列表中（倒序添加以便后续删除）
-                explodedAnimals.unshift(index);
+        // 遍历所有动物类型（如羊驼、猪等）
+        Object.keys(animals).forEach(animalType => {
+            if (animals[animalType] && animals[animalType].length > 0) {
+                // 记录被炸到的动物索引
+                const explodedAnimals = [];
                 
-                // 在羊驼位置创建小爆炸特效
-                createExplosionAnimation(scene, llama.position.clone(), explosionTextures, 1.5);
-                
-                // 转换动物为碎片而不是直接移除
-                createAnimalDebris(scene, llama, explosionCenter, explosionDebris);
-                
-                // 如果有道具库，则增加TNT数量
-                if (inventory && inventory.items) {
-                    // TNT通常在索引1的位置
-                    inventory.items[1].count += 1;
+                // 检查每个动物是否在爆炸范围内
+                animals[animalType].forEach((animal, index) => {
+                    // 跳过已经是碎片的动物
+                    if (animal.isDebris) return;
                     
-                    // 如果提供了更新UI的函数，则更新UI显示
-                    if (typeof updateInventoryUI === 'function' && character) {
-                        updateInventoryUI(character, blockTypes, textures, materials);
+                    // 计算动物到爆炸中心的距离
+                    const distance = animal.position.distanceTo(explosionCenter);
+                    
+                    // 如果距离小于爆炸半径，则认为动物被炸到
+                    if (distance <= animalExplosionRadius) {
+                        // 将索引添加到被炸动物列表中（倒序添加以便后续删除）
+                        explodedAnimals.unshift(index);
+                        
+                        // 在动物位置创建小爆炸特效
+                        createExplosionAnimation(scene, animal.position.clone(), explosionTextures, 1.5);
+                        
+                        // 转换动物为碎片而不是直接移除
+                        createAnimalDebris(scene, animal, explosionCenter, explosionDebris);
+                        
+                        // 如果有道具库，则增加TNT数量
+                        if (inventory && inventory.items) {
+                            // TNT通常在索引1的位置
+                            inventory.items[1].count += 1;
+                            
+                            // 如果提供了更新UI的函数，则更新UI显示
+                            if (typeof updateInventoryUI === 'function' && character) {
+                                updateInventoryUI(character, blockTypes, textures, materials);
+                            }
+                        }
                     }
-                }
+                });
+                
+                // 从动物列表中移除被炸掉并转为碎片的动物
+                explodedAnimals.forEach(index => {
+                    animals[animalType].splice(index, 1);
+                });
             }
-        });
-        
-        // 从动物列表中移除被炸掉并转为碎片的羊驼
-        explodedAnimals.forEach(index => {
-            animals.llamas.splice(index, 1);
         });
     }
 
