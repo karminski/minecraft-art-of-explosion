@@ -2,211 +2,40 @@
 // import * as THREE from 'three';
 import { mapBlockUVs, createAnimalTexture } from './utils.js';
 
-// 羊驼模型创建函数
-function createLlamaModel(scene, textureLoader) {
-    const llamaGroup = new THREE.Group();
-    
-    // 随机选择一种羊驼纹理
-    const llamaColors = ['brown', 'creamy', 'gray', 'white'];
-    const randomColor = llamaColors[Math.floor(Math.random() * llamaColors.length)];
-    const texturePath = `assets/images/llama/${randomColor}.png`;
-    
-    // 创建材质
-    const llamaMaterial = createAnimalTexture(textureLoader, texturePath);
-    const woolMaterial = new THREE.MeshLambertMaterial({ color: 0xEEEEDD }); // 更浅色的毛皮
-    
-    // 基于Minecraft的ModelQuadruped和ModelLlama重新构建
-    // 头部
-    const head = new THREE.Group();
-    
-    // 主吻部 (基于0, 0区域的纹理，4x4x9大小)
-    const snoutGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-    // 设置吻部UV映射 - 根据ModelLlama.java中的纹理坐标
-    mapBlockUVs(snoutGeometry, {
-        top: [9/128, 1 - 5/64, 13/128, 1 - 9/64],
-        bottom: [13/128, 1 - 5/64, 17/128, 1 - 9/64],
-        front: [9/128, 1 - 9/64, 13/128, 1 - 13/64],
-        back: [12/128, 1 - 4/64, 17/128, 1 - 9/64],
-        right: [5 / 128, 1 - 9 / 64, 9 / 128, 1 - 13 / 64],
-        left: [13 / 128, 1 - 9 / 64, 17 / 128, 1 - 13 / 64]
-    });
-    const snout = new THREE.Mesh(snoutGeometry, llamaMaterial);
-    snout.position.set(0, 0.2, -1.0);
-    
-    // 主要头部 (基于0, 14区域的纹理，8x18x6大小)
-    const headMainGeometry = new THREE.BoxGeometry(1.6, 3.2, 1.2);
-    // 设置头部UV映射
-    mapBlockUVs(headMainGeometry, {
-        top: [13/128, 1 - 19/64, 7/128, 1 - 15/64],
-        bottom: [14/128, 1 - 14/64, 22/128, 1 - 20/64],
-        front: [6/128, 1 - 20/64, 14/128, 1 - 38/64],
-        back: [14/128, 1 - 20/64, 22/128, 1 - 38/64],
-        right: [22/128, 1 - 20/64, 28/128, 1 - 38/64],
-        left: [0/128, 1 - 20/64, 6/128, 1 - 38/64]
-    });
-    const headMain = new THREE.Mesh(headMainGeometry, llamaMaterial);
-    headMain.position.set(0, -0.6, 0);
-    
-    // 左耳 (基于17, 0区域的纹理, 3x3x2大小)
-    const leftEarGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.4);
-    mapBlockUVs(leftEarGeometry, {
-        top: [19/128, 1 - 0/64, 22/128, 1 - 2/64],
-        bottom: [22/128, 1 - 0/64, 25/128, 1 - 2/64],
-        front: [19/128, 1 - 2/64, 22/128, 1 - 5/64],
-        back: [22/128, 1 - 2/64, 25/128, 1 - 5/64],
-        right: [25/128, 1 - 2/64, 27/128, 1 - 5/64],
-        left: [17/128, 1 - 2/64, 19/128, 1 - 5/64]
-    });
-    const leftEar = new THREE.Mesh(leftEarGeometry, llamaMaterial);
-    leftEar.position.set(-0.5, 1.2, 0.0);
-    
-    // 右耳 (同左耳)
-    const rightEarGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.4);
-    mapBlockUVs(rightEarGeometry, {
-        top: [19/128, 1 - 0/64, 22/128, 1 - 2/64],
-        bottom: [22/128, 1 - 0/64, 25/128, 1 - 2/64],
-        front: [19/128, 1 - 2/64, 22/128, 1 - 5/64],
-        back: [22/128, 1 - 2/64, 25/128, 1 - 5/64],
-        right: [25/128, 1 - 2/64, 27/128, 1 - 5/64],
-        left: [17/128, 1 - 2/64, 19/128, 1 - 5/64]
-    });
-    const rightEar = new THREE.Mesh(rightEarGeometry, llamaMaterial);
-    rightEar.position.set(0.5, 1.2, 0.0);
-    
-    // 头部整体
-    head.add(snout, headMain, leftEar, rightEar);
-    head.position.set(0, 2.5, -2.0);
-    
-    // 身体 (基于29, 0区域的纹理，12x18x10大小)
-    const bodyGeometry = new THREE.BoxGeometry(2.4, 3.6, 2.0);
-    mapBlockUVs(bodyGeometry, {
-        top: [39/128, 1 - 10/64, 49/128, 1 - 28/64],
-        bottom: [49/128, 1 - 10/64, 63/128, 1 - 28/64],
-        front: [39/128, 1 - 0/64, 49/128, 1 - 10/64],
-        back: [50/128, 1 - 0/64, 63/128, 1 - 10/64],
-        right: [63/128, 1 - 10/64, 73/128, 1 - 28/64],
-        left: [29/128, 1 - 10/64, 39/128, 1 - 28/64]
-    });
-    const body = new THREE.Mesh(bodyGeometry, llamaMaterial);
-    body.position.set(0, 0.5, 0);
-    body.rotation.x = Math.PI / 2; // 关键！垂直放置身体
-    
-    // 腿部 (基于29, 29区域的纹理，每条腿4x14x4大小)
-    function createLeg(x, z) {
-        const legGeometry = new THREE.BoxGeometry(0.8, 2.8, 0.8);
-        legGeometry.translate(0, -1.4, 0); // 移动半个高度
-        
-        mapBlockUVs(legGeometry, {
-            top: [33/128, 1 - 29/64, 37/128, 1 - 33/64],
-            bottom: [37/128, 1 - 29/64, 41/128, 1 - 33/64],
-            front: [33/128, 1 - 33/64, 37/128, 1 - 47/64],
-            back: [37/128, 1 - 33/64, 41/128, 1 - 47/64],
-            right: [41/128, 1 - 33/64, 45/128, 1 - 47/64],
-            left: [29/128, 1 - 33/64, 33/128, 1 - 47/64]
-        });
-        const leg = new THREE.Mesh(legGeometry, llamaMaterial);
-        leg.position.set(x, -0.4, z);
-        return leg;
+// 动物基类 - 提供所有动物共享的基础功能
+class AnimalBase {
+    constructor() {
+        // 基础属性
+        this.type = 'animal'; // 动物类型标识符
+        this.defaultSpeed = 0.003; // 默认移动速度
+        this.gravity = 0.005; // 默认重力值
+        this.model = null; // 动物模型
+        this.animProps = {
+            animationTime: 0,
+            walkingSpeed: 0.1,
+            maxSwingAngle: Math.PI / 8 // 默认摆动角度
+        };
     }
     
-    // 腿部位置基于ModelLlama.java的设置
-    const legFrontLeft = createLeg(-0.5, -0.8);
-    const legFrontRight = createLeg(0.5, -0.8);
-    const legBackLeft = createLeg(-0.5, 1.2);
-    const legBackRight = createLeg(0.5, 1.2);
-    
-    
-    // 添加所有部分到羊驼组
-    llamaGroup.add(head, body, legFrontLeft, legFrontRight, legBackLeft, legBackRight);
-    
-    // 设置整体比例和位置
-    llamaGroup.scale.set(0.4, 0.4, 0.4); // 调整为游戏比例
-    llamaGroup.position.y = 0.6;
-    
-    
-    // 添加默认移动速度 - 增加速度
-    llamaGroup.defaultSpeed = 0.005; // 提高速度，原来是0.0015
-    
-    // 添加动画参数
-    llamaGroup.animProps = {
-        animationTime: 0,
-        walkingSpeed: 0.2,
-        maxSwingAngle: Math.PI / 6 // 羊驼腿摆动的最大角度 (30度)
-    };
-    
-    return llamaGroup;
-}
-
-// 在世界中随机放置羊驼
-function placeLlamasRandomly(scene, world, worldSize, textureLoader) {
-    const llamas = [];
-    // 减少生成数量，便于调试
-    const count = 120; // 固定生成3只进行测试
-    
-    console.log(`尝试生成 ${count} 只羊驼...`);
-    console.log(`世界大小: ${worldSize}`);
-    console.log(`blockTypes.air = ${window.blockTypes.air}`);
-    
-    for (let i = 0; i < count; i++) {
-        try {
-            // 创建一只新羊驼，传入textureLoader
-            const llama = createLlamaModel(scene, textureLoader);
-            
-            // 设置安全边界距离，避免生成在世界边缘
-            const safeMargin = 5;
-            
-            // 在安全范围内随机生成坐标
-            const x = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
-            const z = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
-            
-            console.log(`生成羊驼 #${i} 在坐标: x=${x}, z=${z}`);
-            
-            // 安全地找到生成高度
-            let spawnY = 30; // 默认高度
-            try {
-                spawnY = findLlamaSpawnHeight(world, x, z, worldSize) + 5;
-                console.log(`计算得到生成高度: y=${spawnY}`);
-                
-                // 确保Y不是NaN
-                if (isNaN(spawnY)) {
-                    console.error(`生成高度是NaN，使用默认值`);
-                    spawnY = 30;
-                }
-            } catch (e) {
-                console.error(`计算生成高度时出错:`, e);
-            }
-            
-            console.log(`羊驼 #${i} 最终生成高度: y=${spawnY}`);
-            
-            // 设置初始位置和物理属性
-            llama.position.set(x + 0.5, spawnY, z + 0.5);
-            llama.velocity = new THREE.Vector3(0, 0, 0);
-            llama.gravity = 0.005; 
-            llama.isGrounded = false;
-            
-            // 随机旋转
-            llama.rotation.y = Math.random() * Math.PI * 2;
-            
-            // 添加到场景
-            scene.add(llama);
-            llamas.push(llama);
-            
-            // 再次检查位置是否有效
-            if (isNaN(llama.position.y)) {
-                console.error(`生成后的Y坐标是NaN，修正为20`);
-                llama.position.y = 20;
-            }
-        } catch (e) {
-            console.error(`生成羊驼 #${i} 时出错:`, e);
-        }
+    // 创建模型 - 需要被子类重写
+    createModel(scene, textureLoader) {
+        console.warn("createModel必须被子类实现");
+        return new THREE.Group(); // 返回空模型作为默认值
     }
     
-    console.log(`成功生成 ${llamas.length} 只羊驼`);
-    return llamas;
-}
-
-// 查找羊驼生成的安全高度
-function findLlamaSpawnHeight(world, x, z, worldSize) {
+    // 默认的腿部动画方法 - 可被子类重写
+    animateLegs(animal, deltaTime) {
+        console.warn("animateLegs必须被子类实现");
+    }
+    
+    // 静态方法：在世界中随机放置动物 - 需要被子类重写
+    static placeRandomly(scene, world, worldSize, textureLoader, count) {
+        console.warn("placeRandomly必须被子类实现");
+        return [];
+    }
+    
+    // 静态方法：找到生成高度 - 通用方法
+    static findSpawnHeight(world, x, z, worldSize) {
     // 找到该坐标上最高的非空气方块
     let highestY = 0;
     
@@ -245,185 +74,106 @@ function findLlamaSpawnHeight(world, x, z, worldSize) {
     return isNaN(result) ? 10 : result;
 }
 
-// 修改腿部动画函数，更新查找腿部的条件以匹配实际位置
-function animateLlamaLegs(llama, deltaTime) {
-    // 如果羊驼被标记为暂停动画，则跳过动画更新
-    if (llama.pauseAnimation) return;
-    
-    // 如果羊驼正在移动
-    if (llama.moveProps && llama.moveProps.state === 'walking') {
-        // 更新动画计时器
-        llama.animProps.animationTime += llama.animProps.walkingSpeed * (deltaTime / 16);
-        
-        // 计算腿部摆动角度(使用正弦函数)
-        const swingAngle = Math.sin(llama.animProps.animationTime) * llama.animProps.maxSwingAngle;
-        
-        // 获取四条腿的引用 - 修正查找条件，y位置为-0.4
-        const legs = llama.children.filter(child => 
-            child.position.y === -0.4 && 
-            Math.abs(child.position.x) === 0.5
-        );
-        
-        if (legs.length === 4) {
-            // 获取各条腿的引用
-            const frontLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === -0.8);
-            const frontRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === -0.8);
-            const backLeftLeg = legs.find(leg => leg.position.x === -0.5 && leg.position.z === 1.2);
-            const backRightLeg = legs.find(leg => leg.position.x === 0.5 && leg.position.z === 1.2);
-            
-            // 对角腿同步摆动（类似于四足动物的跑步模式）
-            if (frontLeftLeg) frontLeftLeg.rotation.x = swingAngle;
-            if (backRightLeg) backRightLeg.rotation.x = swingAngle;
-            
-            if (frontRightLeg) frontRightLeg.rotation.x = -swingAngle;
-            if (backLeftLeg) backLeftLeg.rotation.x = -swingAngle;
-        }
-    } else {
-        // 如果羊驼静止，重置腿部位置
-        llama.animProps.animationTime = 0;
-        
-        // 获取腿部引用并重置位置 - 同样修正y位置为-0.4
-        const legs = llama.children.filter(child => 
-            child.position.y === -0.4 && 
-            Math.abs(child.position.x) === 0.5
-        );
-        
-        legs.forEach(leg => {
-            leg.rotation.x = 0;
-        });
+    // 静态方法：补充动物 - 需要被子类实现
+    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd) {
+        console.warn("replenish必须被子类实现");
+        return 0;
     }
 }
 
-// 更新所有羊驼的位置(模拟重力、碰撞和随机移动)
-function updateLlamas(llamas, world, worldSize, deltaTime, player = null, animals = null) {
+// 更新所有动物的位置(模拟重力、碰撞和随机移动)
+function updateAnimals(animals, world, worldSize, deltaTime, player = null) {
     // 防止deltaTime过大或为NaN
     if (isNaN(deltaTime) || deltaTime > 1000) {
         console.error(`无效的deltaTime: ${deltaTime}, 使用默认值`);
         deltaTime = 16; // 使用16ms作为默认值
     }
     
-    llamas.forEach(llama => {
-        // 先检查羊驼位置是否有效
-        if (isNaN(llama.position.x) || isNaN(llama.position.y) || isNaN(llama.position.z)) {
-            console.error(`羊驼位置包含NaN，重置到安全位置`);
-            llama.position.set(
-                isNaN(llama.position.x) ? Math.floor(worldSize/2) : llama.position.x,
+    // 遍历所有动物类型
+    Object.keys(animals).forEach(animalType => {
+        animals[animalType].forEach(animal => {
+            // 先检查动物位置是否有效
+            if (isNaN(animal.position.x) || isNaN(animal.position.y) || isNaN(animal.position.z)) {
+                console.error(`${animalType}位置包含NaN，重置到安全位置`);
+                animal.position.set(
+                    isNaN(animal.position.x) ? Math.floor(worldSize/2) : animal.position.x,
                 20, // 固定高度
-                isNaN(llama.position.z) ? Math.floor(worldSize/2) : llama.position.z
-            );
-            llama.velocity.set(0, 0, 0);
-        }
-        
-        // 检查羊驼四条腿是否有任何一条与地面接触
-        // 定义四条腿的相对位置偏移（基于羊驼的局部坐标系）
-        const legOffsets = [
-            {x: -0.5, z: -0.8}, // 左前腿
-            {x: 0.5, z: -0.8},  // 右前腿
-            {x: -0.5, z: 1.2},  // 左后腿
-            {x: 0.5, z: 1.2}    // 右后腿
-        ];
-        
-        // 旋转腿部偏移以匹配羊驼的旋转
-        const rotatedLegOffsets = legOffsets.map(offset => {
-            const sin = Math.sin(llama.rotation.y);
-            const cos = Math.cos(llama.rotation.y);
-            return {
-                x: offset.x * cos - offset.z * sin,
-                z: offset.x * sin + offset.z * cos
-            };
+                    isNaN(animal.position.z) ? Math.floor(worldSize/2) : animal.position.z
+                );
+                animal.velocity.set(0, 0, 0);
+            }
+            
+            // 应用物理和移动更新
+            updateAnimalPhysics(animal, world, worldSize);
+            
+            // 应用随机移动
+            moveAnimalRandomly(animal, deltaTime, world, worldSize, player, animals);
+            
+            // 调用特定动物类型的动画更新
+            if (animal.controller && typeof animal.controller.animateLegs === 'function') {
+                animal.controller.animateLegs(animal, deltaTime);
+            }
         });
-        
-        // 检查每条腿下方是否有方块
+    });
+}
+
+// 处理动物的物理更新(重力和碰撞)
+function updateAnimalPhysics(animal, world, worldSize) {
+    // 检查动物是否与地面接触
         let isCollidingWithGround = false;
         let groundHeight = -1;
         
-        // 修改为先寻找所有腿下的最高点，然后设置统一高度，避免抖动
-        for (const offset of rotatedLegOffsets) {
-            const legX = Math.floor(llama.position.x + offset.x * llama.scale.x);
-            const legZ = Math.floor(llama.position.z + offset.z * llama.scale.z);
+    // 简化的地面检测 - 只检查动物正下方的方块
+    const animalX = Math.floor(animal.position.x);
+    const animalZ = Math.floor(animal.position.z);
+    
+    // 安全检查
+    if (animalX >= 0 && animalX < worldSize && animalZ >= 0 && animalZ < worldSize) {
+        for (let checkY = Math.floor(animal.position.y - 1); checkY >= 0 && checkY >= Math.floor(animal.position.y) - 3; checkY--) {
+            if (checkY < 0 || checkY >= worldSize) continue;
             
-            // 如果出现任何NaN坐标，跳过这一条腿的检查
-            if (isNaN(legX) || isNaN(legZ)) {
-                continue;
-            }
-            
-            // 检查腿下方的几个方块，找出最高的地面
-            for (let checkY = Math.floor(llama.position.y - 1); checkY >= 0 && checkY >= Math.floor(llama.position.y) - 3; checkY--) {
-                // 安全地检查是否在世界边界内
-                const inBounds = (
-                    legX >= 0 && legX < worldSize && 
-                    checkY >= 0 && checkY < worldSize && 
-                    legZ >= 0 && legZ < worldSize
-                );
-                
-                if (inBounds) {
-                    try {
-                        // 检查腿部下方的方块
-                        if (world[legX][checkY][legZ] !== window.blockTypes.air && 
-                            world[legX][checkY][legZ] !== window.blockTypes.leaves) {
+            try {
+                if (world[animalX][checkY][animalZ] !== window.blockTypes.air && 
+                    world[animalX][checkY][animalZ] !== window.blockTypes.leaves) {
                             isCollidingWithGround = true;
-                            
-                            // 修正：调整羊驼站立高度计算
-                            // 原来使用 checkY + 1 + 0.8，这可能导致腿部陷入方块
-                            // 羊驼模型缩放为0.4，腿部高度约为2.8 * 0.4 = 1.12格
-                            // 考虑到腿部位置在-0.4，实际腿部底端距离羊驼中心约为 1.12 + 0.4 = 1.52格
-                            // 所以我们需要设置羊驼中心高度为 方块顶面 + 腿部长度一半
-                            const thisHeight = checkY + 1 + 1.25; // 方块顶面高度 + 足够腿部高度的偏移
-                            
-                            groundHeight = Math.max(groundHeight, thisHeight);
-                            break; // 找到了这条腿下的地面，不需要继续向下检查
+                    groundHeight = checkY + 1 + 1.0; // 方块顶面高度 + 适当偏移
+                    break;
                         }
                     } catch (e) {
-                        console.error(`访问世界数组错误: x=${legX}, y=${checkY}, z=${legZ}`, e);
-                    }
+                console.error(`物理检测错误: x=${animalX}, y=${checkY}, z=${animalZ}`, e);
                 }
             }
         }
         
         // 应用重力和碰撞检测
-        // 如果没有碰到地面，应用重力
         if (!isCollidingWithGround) {
             // 安全地更新速度
-            const gravityDelta = llama.gravity * deltaTime;
+        const gravityDelta = animal.gravity * 16;
             if (!isNaN(gravityDelta)) {
-                llama.velocity.y -= gravityDelta;
+            animal.velocity.y -= gravityDelta;
             }
-            llama.isGrounded = false;
+        animal.isGrounded = false;
         } else {
             // 碰到地面，停止下落
-            llama.velocity.y = 0;
-            // 确保正好站在方块顶部，统一高度避免抖动
+        animal.velocity.y = 0;
+        // 确保正好站在方块顶部
             if (groundHeight > 0) {
-                // 平滑过渡到正确的高度，但增加目标高度的权重确保羊驼不会下沉
-                // 从原来的0.5:0.5调整为0.3:0.7，让羊驼更快地达到目标高度
-                llama.position.y = llama.position.y * 0.3 + groundHeight * 0.7;
+            // 平滑过渡到正确的高度
+            animal.position.y = animal.position.y * 0.3 + groundHeight * 0.7;
             }
-            llama.isGrounded = true;
+        animal.isGrounded = true;
         }
         
         // 应用速度前检查是否为NaN
-        if (!isNaN(llama.velocity.y)) {
-            llama.position.y += llama.velocity.y;
+    if (!isNaN(animal.velocity.y)) {
+        animal.position.y += animal.velocity.y;
         } else {
-            console.error(`羊驼Y速度是NaN，重置为0`);
-            llama.velocity.y = 0;
-        }
-        
-        // 应用随机移动，传入player和animals参数用于碰撞检测
-        moveAnimalRandomly(llama, deltaTime, world, worldSize, player, animals);
-        
-        // 添加动画更新
-        animateLlamaLegs(llama, deltaTime);
-        
-        // 最后检查位置是否合法
-        if (isNaN(llama.position.y)) {
-            console.error(`更新后羊驼Y坐标是NaN，重置为安全值`);
-            llama.position.y = 10;
-        }
-    });
+        console.error(`动物Y速度是NaN，重置为0`);
+        animal.velocity.y = 0;
+    }
 }
 
-// 修改随机移动函数，使动物转向更自然
+// 动物随机移动逻辑
 function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, animals = null) {
     // 如果动物没有移动相关属性，初始化它们
     if (!animal.moveProps) {
@@ -442,11 +192,11 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
             speed: animal.defaultSpeed || 0.001,
             // 方向改变的最小间隔 (毫秒)
             directionChangeInterval: 500,
-            // 新增：目标旋转角度
+            // 目标旋转角度
             targetRotation: 0,
-            // 新增：当前转向持续时间
+            // 当前转向持续时间
             turningTimeRemaining: 0,
-            // 新增：转向速度 (弧度/毫秒)
+            // 转向速度 (弧度/毫秒)
             turningSpeed: 0.005
         };
     }
@@ -467,16 +217,15 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
             // 设置随机移动方向
             const angle = Math.random() * Math.PI * 2;
             
-            // 修改：调整方向计算，使羊驼正向前进
-            // 由于羊驼模型头部在Z轴负方向，需要反转方向向量
+            // 调整方向计算
             props.direction.set(
                 -Math.sin(angle), // 反转X方向
                 0,
                 -Math.cos(angle)  // 反转Z方向
             );
             
-            // 更新动物朝向 - 反转角度使其面向前进方向
-            animal.rotation.y = angle + Math.PI * 2; // 添加360度旋转
+            // 更新动物朝向
+            animal.rotation.y = angle + Math.PI * 2; 
         }
     } else if (props.state === 'turning') {
         // 处理转向状态
@@ -539,97 +288,8 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
                 newPosZ < worldSize - boundaryMargin
             );
             
-            // 增强的碰撞检测
-            let hasCollision = false;
-            if (inBounds) {
-                const floorX = Math.floor(newPosX);
-                const floorY = Math.floor(animal.position.y);
-                const floorZ = Math.floor(newPosZ);
-                
-                try {
-                    // 定义羊驼的高度范围 (从腿部到头部)
-                    // 羊驼缩放为0.4倍，总高度约为4个方块，需要检查的高度是地面以上3格
-                    const animalHeight = 3; 
-                    
-                    // 检测前方各个高度的方块
-                    for (let heightOffset = 0; heightOffset < animalHeight; heightOffset++) {
-                        const checkY = floorY + heightOffset;
-                        
-                        // 超出世界边界的不检测
-                        if (checkY >= worldSize || checkY < 0) continue;
-                        
-                        // 获取该位置的方块类型
-                        const blockType = world[floorX][checkY][floorZ];
-                        
-                        // 如果是空气或树叶，则继续检测更高的方块
-                        if (blockType === window.blockTypes.air || blockType === window.blockTypes.leaves) continue;
-                        
-                        // 如果是高度为1的方块并且在地面层，羊驼可以跨过
-                        if (heightOffset === 0 && isLowBlock(blockType)) {
-                            // 低矮方块不阻挡移动
-                            continue;
-                        }
-                        
-                        // 其他情况 (高于1的方块或高度位置不是地面层的方块) 视为碰撞
-                        hasCollision = true;
-                        break;
-                    }
-                    
-                    // 额外检查头部高度的碰撞
-                    // 羊驼头部在前方，需要检查头部区域
-                    const headX = Math.floor(newPosX + props.direction.x * 0.8); // 头部前方位置
-                    const headZ = Math.floor(newPosZ + props.direction.z * 0.8);
-                    
-                    // 只有在边界内才检查
-                    if (headX >= 0 && headX < worldSize && headZ >= 0 && headZ < worldSize) {
-                        // 检查头部高度的方块
-                        const headY = floorY + 2; // 头部大约在地面以上2格高
-                        
-                        if (headY >= 0 && headY < worldSize &&
-                            world[headX][headY][headZ] !== window.blockTypes.air &&
-                            world[headX][headY][headZ] !== window.blockTypes.leaves) {
-                            hasCollision = true;
-                        }
-                    }
-                    
-                    // 检查与玩家的碰撞
-                    if (player) {
-                        const playerPos = player.position;
-                        
-                        // 使用简单的碰撞盒：距离小于1.5个方块
-                        const distanceToPlayer = Math.sqrt(
-                            Math.pow(newPosX - playerPos.x, 2) + 
-                            Math.pow(newPosZ - playerPos.z, 2)
-                        );
-                        
-                        if (distanceToPlayer < 1.5) {
-                            hasCollision = true;
-                        }
-                    }
-                    
-                    // 检查与其他羊驼的碰撞
-                    if (animals && animals.llamas) {
-                        for (const otherLlama of animals.llamas) {
-                            // 不要与自己碰撞检测
-                            if (otherLlama === animal) continue;
-                            
-                            // 检查与其他羊驼的距离
-                            const distanceToLlama = Math.sqrt(
-                                Math.pow(newPosX - otherLlama.position.x, 2) + 
-                                Math.pow(newPosZ - otherLlama.position.z, 2)
-                            );
-                            
-                            // 如果太近，视为碰撞
-                            if (distanceToLlama < 1.2) {
-                                hasCollision = true;
-                                break;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error(`碰撞检测错误: x=${floorX}, y=${floorY}, z=${floorZ}`, e);
-                }
-            }
+            // 碰撞检测
+            let hasCollision = checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals);
             
             // 如果没有碰撞且在边界内，更新位置
             if (!hasCollision && inBounds) {
@@ -638,8 +298,7 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
             } else {
                 // 如果发生碰撞或超出边界，进入转向状态
                 
-                // 计算新的前进方向 - 不直接向后转，而是向左或向右避开障碍物
-                // 获取当前前进方向角度
+                // 计算新的前进方向
                 const currentAngle = animal.rotation.y;
                 
                 // 计算一个避免向后的新角度 (左转或右转70-110度)
@@ -666,7 +325,89 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
     }
 }
 
-// 辅助函数：判断方块是否为可以越过的低矮方块(高度为1)
+// 检查碰撞
+function checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals) {
+    const floorX = Math.floor(newPosX);
+    const floorY = Math.floor(animal.position.y);
+    const floorZ = Math.floor(newPosZ);
+    
+    try {
+        // 检查是否在世界边界内
+        if (floorX < 0 || floorX >= worldSize || floorZ < 0 || floorZ >= worldSize) {
+            return true; // 世界边界碰撞
+        }
+        
+        // 检查前方方块
+        // 根据动物类型定义高度
+        const animalHeight = 3; // 默认高度
+        
+        // 检测前方各个高度的方块
+        for (let heightOffset = 0; heightOffset < animalHeight; heightOffset++) {
+            const checkY = floorY + heightOffset;
+            
+            // 超出世界边界的不检测
+            if (checkY >= worldSize || checkY < 0) continue;
+            
+            // 获取该位置的方块类型
+            const blockType = world[floorX][checkY][floorZ];
+            
+            // 如果是空气或树叶，则继续检测更高的方块
+            if (blockType === window.blockTypes.air || blockType === window.blockTypes.leaves) continue;
+            
+            // 如果是高度为1的方块并且在地面层，动物可以跨过
+            if (heightOffset === 0 && isLowBlock(blockType)) {
+                continue;
+            }
+            
+            // 其他情况视为碰撞
+            return true;
+        }
+        
+        // 检查与玩家的碰撞
+        if (player) {
+            const playerPos = player.position;
+            
+            const distanceToPlayer = Math.sqrt(
+                Math.pow(newPosX - playerPos.x, 2) + 
+                Math.pow(newPosZ - playerPos.z, 2)
+            );
+            
+            if (distanceToPlayer < 1.5) {
+                return true;
+            }
+        }
+        
+        // 检查与其他动物的碰撞
+        if (animals) {
+            // 遍历所有动物类型
+            for (const type in animals) {
+                for (const otherAnimal of animals[type]) {
+                    // 不要与自己碰撞检测
+                    if (otherAnimal === animal) continue;
+                    
+                    // 检查与其他动物的距离
+                    const distanceToAnimal = Math.sqrt(
+                        Math.pow(newPosX - otherAnimal.position.x, 2) + 
+                        Math.pow(newPosZ - otherAnimal.position.z, 2)
+                    );
+                    
+                    // 如果太近，视为碰撞
+                    if (distanceToAnimal < 1.2) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+    } catch (e) {
+        console.error(`碰撞检测错误: x=${floorX}, y=${floorY}, z=${floorZ}`, e);
+        return true; // 出错时视为碰撞
+    }
+    
+    return false; // 无碰撞
+}
+
+// 判断方块是否为可以越过的低矮方块(高度为1)
 function isLowBlock(blockType) {
     // 定义所有高度为1的方块类型
     const lowBlocks = [
@@ -675,7 +416,6 @@ function isLowBlock(blockType) {
         window.blockTypes.redstoneTorch,
         window.blockTypes.fire,
         window.blockTypes.redstoneWire
-        // 可以添加其他高度为1的方块类型
     ];
     
     return lowBlocks.includes(blockType);
@@ -685,123 +425,130 @@ function isLowBlock(blockType) {
 function initAnimalSystem(scene, world, worldSize, textureLoader) {
     console.log("正在初始化动物系统...");
     
+    // 检查全局 blockTypes 是否存在
     if (!window.blockTypes) {
-        console.error("错误: blockTypes 未定义！");
-        return { 
-            animals: { llamas: [] }, 
-            update: function() {} // 空函数
-        };
-    }
-    
-    console.log("blockTypes 已加载:", window.blockTypes);
-    
-    let animals;
-    try {
-        animals = {
-            llamas: placeLlamasRandomly(scene, world, worldSize, textureLoader)
-        };
-    } catch (e) {
-        console.error("生成羊驼时发生错误:", e);
-        animals = { llamas: [] };
-    }
-    
-    console.log(`已创建 ${animals.llamas.length} 只羊驼`);
-    
-    // 添加初始数量记录和上次检查时间戳
-    const initialCounts = {
-        llamas: animals.llamas.length
-    };
-    let lastReplenishCheck = 0;
-    
-    // 返回包含更新函数的对象
-    return {
-        animals: animals,
-        initialCounts: initialCounts, // 导出初始数量记录
-        update: function(deltaTime, player = null) {
-            try {
-                updateLlamas(animals.llamas, world, worldSize, deltaTime, player, animals);
-                
-                // 添加动物补充逻辑
-                const currentTime = performance.now();
-                if (currentTime - lastReplenishCheck > 2000) { // 每2秒检查一次
-                    replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts);
-                    lastReplenishCheck = currentTime;
+        console.error("错误: window.blockTypes 未定义，需要延迟初始化");
+        // 创建一个基本的动物系统，稍后会重新初始化
+        window.animalSystem = {
+            animals: { llamas: [] },
+            initialCounts: { llamas: 0 },
+            initialized: false,
+            update: function(deltaTime, player) {
+                // 延迟初始化：检查 blockTypes 是否已设置
+                if (window.blockTypes && !this.initialized) {
+                    console.log("检测到 blockTypes 已设置，重新初始化动物系统");
+                    this.initialized = true;
+                    // 重新调用初始化
+                    initializeAnimals(scene, world, worldSize, textureLoader);
+                } else {
+                    console.log("等待 blockTypes 初始化...");
                 }
-            } catch (e) {
-                console.error("更新羊驼时发生错误:", e);
             }
-        }
-    };
+        };
+        return;
+    }
+    
+    // blockTypes 存在，正常初始化
+    initializeAnimals(scene, world, worldSize, textureLoader);
 }
 
-// 新增：动物补充功能
-function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts) {
-    // 检查羊驼数量是否低于初始值
-    if (animals.llamas.length < initialCounts.llamas) {
-        console.log(`检测到羊驼数量不足，当前: ${animals.llamas.length}，目标: ${initialCounts.llamas}`);
+// 将实际初始化逻辑提取到单独的函数
+function initializeAnimals(scene, world, worldSize, textureLoader) {
+    // 创建一个基本的动物系统
+    const tempSystem = {
+        animals: { llamas: [] },
+        initialCounts: { llamas: 0 },
+        initialized: true,
+        update: function(deltaTime, player) {
+            console.log("动物系统正在加载中...");
+        }
+    };
+    
+    // 立即设置临时系统
+    window.animalSystem = tempSystem;
+    
+    // 导入所有动物类型
+    import('./animal_llama.js').then(({ LlamaAnimal }) => {
+        console.log("开始初始化羊驼...");
+        console.log("blockTypes 状态:", window.blockTypes ? "已定义" : "未定义");
         
-        // 计算需要补充的羊驼数量
-        const countToAdd = initialCounts.llamas - animals.llamas.length;
+        if (!window.blockTypes) {
+            console.error("错误: 导入动物后 blockTypes 仍未定义！");
+            return;
+        }
         
-        // 一次最多补充5只，避免突然生成太多导致卡顿
-        const batchSize = Math.min(countToAdd, 5);
-        console.log(`本次将补充 ${batchSize} 只羊驼`);
+        // 创建动物容器
+        let animals = {
+            llamas: [] // 开始只有羊驼
+        };
         
         try {
-            // 创建新羊驼并添加到现有数组中
-            for (let i = 0; i < batchSize; i++) {
-                const llama = createLlamaModel(scene, textureLoader);
-                
-                // 在世界边缘生成新羊驼，而不是中心区域
-                const edgeOffset = 5;
-                // 随机选择一个边缘位置
-                let x, z;
-                const side = Math.floor(Math.random() * 4); // 0-3表示四个边
-                
-                switch (side) {
-                    case 0: // 北边
-                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        z = edgeOffset;
-                        break;
-                    case 1: // 东边
-                        x = worldSize - edgeOffset - 1;
-                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        break;
-                    case 2: // 南边
-                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        z = worldSize - edgeOffset - 1;
-                        break;
-                    case 3: // 西边
-                        x = edgeOffset;
-                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        break;
-                }
-                
-                // 确定安全的生成高度
-                const spawnY = findLlamaSpawnHeight(world, x, z, worldSize);
-                
-                // 设置新羊驼的位置和物理属性
-                llama.position.set(x + 0.5, spawnY, z + 0.5);
-                llama.velocity = new THREE.Vector3(0, 0, 0);
-                llama.gravity = 0.005;
-                llama.isGrounded = false;
-                
-                // 添加到场景和数组
-                scene.add(llama);
-                animals.llamas.push(llama);
-            }
-            
-            console.log(`成功补充 ${batchSize} 只羊驼，当前总数: ${animals.llamas.length}`);
+            // 放置羊驼
+            animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, 120);
+            console.log(`已创建 ${animals.llamas.length} 只羊驼`);
         } catch (e) {
-            console.error("补充羊驼时出错:", e);
+            console.error("生成动物时发生错误:", e);
+            console.error(e.stack); // 打印完整堆栈
         }
-    }
+        
+        // 记录初始数量
+        const initialCounts = {
+            llamas: animals.llamas.length
+        };
+        
+        let lastReplenishCheck = 0;
+        
+        // 更新全局动物系统对象
+        window.animalSystem = {
+            animals: animals,
+            initialCounts: initialCounts,
+            initialized: true,
+            update: function(deltaTime, player = null) {
+                try {
+                    // 更新所有动物
+                    updateAnimals(animals, world, worldSize, deltaTime, player);
+                    
+                    // 动物补充逻辑
+                    const currentTime = performance.now();
+                    if (currentTime - lastReplenishCheck > 10000) { // 每10秒检查一次
+                        replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts);
+                        lastReplenishCheck = currentTime;
+                    }
+                } catch (e) {
+                    console.error("更新动物时发生错误:", e);
+                }
+            }
+        };
+        
+        console.log("动物系统初始化完成!");
+    }).catch(error => {
+        console.error("导入动物模块时出错:", error);
+    });
 }
 
-// 导出函数
+// 动物补充功能
+function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts) {
+    // 动态导入所有动物类
+    import('./animal_llama.js').then(({ LlamaAnimal }) => {
+        // 检查羊驼数量
+    if (animals.llamas.length < initialCounts.llamas) {
+        const countToAdd = initialCounts.llamas - animals.llamas.length;
+            LlamaAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd);
+        }
+        
+        // 未来可以在这里添加其他动物的补充逻辑
+        // if (animals.cows.length < initialCounts.cows) {
+        //    const countToAdd = initialCounts.cows - animals.cows.length;
+        //    CowAnimal.replenish(...);
+        // }
+    });
+}
+
+// 导出函数和类
 export {
-    createLlamaModel,
-    placeLlamasRandomly,
+    AnimalBase,
     initAnimalSystem,
-    replenishAnimals // 导出新函数
+    updateAnimals,
+    moveAnimalRandomly,
+    replenishAnimals
 };

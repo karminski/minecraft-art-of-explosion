@@ -102,6 +102,11 @@ const blockReferences = [];
 // 添加一个数组来存储爆炸碎片
 const explosionDebris = [];
 
+// 在调用 initWorld 前，确保 window.blockTypes 已设置
+// 将这行代码移到更早的位置
+window.blockTypes = blockTypes;
+console.log("已设置全局 blockTypes:", window.blockTypes);
+
 // 创建世界数组并初始化（旧代码将被替换）
 const world = initWorld(worldSize, blockTypes, (generatedWorld) => {
     // 这是渲染回调函数
@@ -214,23 +219,10 @@ crosshairCtx.lineTo(20, 10);
 crosshairCtx.strokeStyle = 'white';
 crosshairCtx.stroke();
 
-// 在world初始化之后，动物系统初始化之前，添加这行代码
-// 将blockTypes添加到window对象，使animal.js可以访问
-window.blockTypes = blockTypes; 
-
-// 在世界初始化后，添加动物
+// 初始化动物系统
 const animalSystem = initAnimalSystem(scene, world, worldSize, textureLoader);
 
-// 添加调试信息以确认动物系统初始化
-console.log("动物系统初始化完成", animalSystem);
-
-// 将animalSystem添加到全局对象，便于调试和访问
-window.animalSystem = animalSystem;
-
-// 添加控制台日志，显示初始动物数量记录
-console.log("动物初始数量记录:", animalSystem.initialCounts);
-
-// 在animate函数内添加动物更新逻辑
+// 在animate函数内，修改动物更新处理
 function animate(currentTime) {
     requestAnimationFrame(animate);
 
@@ -248,29 +240,32 @@ function animate(currentTime) {
     // 添加：确保传递给动物系统的是有效数值
     const animalDeltaTime = frameTime;
     
-    // 添加：更新动物系统（传递时间增量）
-    if (animalSystem && typeof animalSystem.update === 'function') {
-        animalSystem.update(animalDeltaTime, player);
+    // 修改：更新动物系统（检查全局对象而不是局部变量）
+    if (window.animalSystem && typeof window.animalSystem.update === 'function') {
+        window.animalSystem.update(animalDeltaTime, player);
         
-        // 添加：在调试面板中显示动物数量信息
-        if (animalSystem.animals && animalSystem.animals.llamas) {
+        // 调试面板显示动物数量信息
+        if (window.animalSystem.animals && window.animalSystem.animals.llamas) {
             const debugPanel = document.getElementById('debug-panel');
             if (debugPanel) {
-                const animalInfo = `羊驼数量: ${animalSystem.animals.llamas.length}/${animalSystem.initialCounts.llamas}`;
+                const animalInfo = `羊驼数量: ${window.animalSystem.animals.llamas.length}/${window.animalSystem.initialCounts.llamas}`;
                 // 将此信息添加到调试面板中
                 debugPanel.innerHTML += `<br>${animalInfo}`;
             }
         }
     } else {
-        console.error("动物系统或更新函数不存在!");
+        console.log("等待动物系统初始化完成...");
     }
 
-    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys, animalSystem.animals);
+    // 使用全局animalSystem
+    const animals = window.animalSystem ? window.animalSystem.animals : {};
+    updateCamera(player, character, characterGroup, characterAnimation, camera, world, worldSize, controlsState.keys, animals);
 
     // 只有在第一人称视角时才应用视锥剔除和距离裁剪
     let lookDirection;
     if (activeCamera === camera) {
-        lookDirection = applyFrustumCulling(camera, blockReferences, frustumSystem, renderSettings, animalSystem.animals);
+        // 修改：传递正确的动物集合
+        lookDirection = applyFrustumCulling(camera, blockReferences, frustumSystem, renderSettings, animals);
     } else {
         // 在俯视视角下，显示所有方块
         blockReferences.forEach(block => {
@@ -380,11 +375,12 @@ animate();
 // 使用新的函数初始化页面加载时的鼠标锁定
 initPageLoadMouseLock(window);
 
-// 监听TNT爆炸事件
+// 修改：TNT爆炸事件监听器 - 使用全局动物对象访问
 document.addEventListener('tnt-explosion', (event) => {
     const { x, y, z } = event.detail;
     console.log(`TNT爆炸触发，位置: (${x}, ${y}, ${z})`);
     
+    const currentAnimals = window.animalSystem ? window.animalSystem.animals : {};
     explodeTNT(
         scene, 
         x, y, z, 
@@ -395,7 +391,7 @@ document.addEventListener('tnt-explosion', (event) => {
         explosionTextures, 
         materials, 
         explosionDebris,
-        animalSystem.animals,
+        currentAnimals,
         inventory,
         updateInventoryUI,
         character,
@@ -403,10 +399,11 @@ document.addEventListener('tnt-explosion', (event) => {
     );
 });
 
-// 保留现有的全局函数处理方式作为备份
+// 保留现有的全局函数处理方式作为备份 - 修改为使用全局动物对象
 window.handleTNTExplosion = function(x, y, z) {
     console.log(`全局TNT爆炸处理，位置: (${x}, ${y}, ${z})`);
     
+    const currentAnimals = window.animalSystem ? window.animalSystem.animals : {};
     explodeTNT(
         scene, 
         x, y, z, 
@@ -417,7 +414,7 @@ window.handleTNTExplosion = function(x, y, z) {
         explosionTextures, 
         materials, 
         explosionDebris,
-        animalSystem.animals,
+        currentAnimals,
         inventory,
         updateInventoryUI,
         character,
