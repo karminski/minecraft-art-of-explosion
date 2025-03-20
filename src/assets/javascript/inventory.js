@@ -17,7 +17,13 @@ const inventory = {
 let heldItemMesh = null;
 
 // 创建道具栏
-function createInventoryUI() {
+function createInventoryUI(config) {
+
+    // 获取配置并设置TNT数量
+    const tntDefaultNum = config.gameConfig.tntDefaultNum;
+    inventory.items[1].count = tntDefaultNum;
+
+    // 创建道具栏UI
     const inventoryElement = document.getElementById('inventory');
     inventoryElement.innerHTML = '';
 

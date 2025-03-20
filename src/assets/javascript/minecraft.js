@@ -88,6 +88,11 @@ import {
     initUserDataSystem
 } from './user_data.js';
 
+// 添加导入config.js中的函数
+import {
+    getConfig
+} from './config.js';
+
 // 导出游戏实例，以便其他模块可以访问
 export function createMinefract() {
 
@@ -238,6 +243,9 @@ export function createMinefract() {
 
     // 初始化用户数据系统
     const userDataSystem = initUserDataSystem();
+
+    // 获取系统配置
+    const config = getConfig(userDataSystem);
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
@@ -400,7 +408,7 @@ export function createMinefract() {
     });
 
     // 初始化道具栏
-    createInventoryUI();
+    createInventoryUI(config);
 
     // 开始动画循环
     animate();
@@ -408,6 +416,7 @@ export function createMinefract() {
 
 
     return {
+        config: config,
         scene: scene,
         world: world,
         blockReferences: blockReferences,
@@ -436,8 +445,10 @@ window.MinecraftArtOfExplode = createMinefract();
 document.addEventListener('tnt-explosion', (event) => {
     const { x, y, z } = event.detail;
     console.log(`TNT爆炸触发，位置: (${x}, ${y}, ${z})`);
+    console.log(window.MinecraftArtOfExplode.config);
     
     explodeTNT(
+        window.MinecraftArtOfExplode.config,
         window.MinecraftArtOfExplode.scene, 
         x, y, z, 
         window.MinecraftArtOfExplode.world, 
@@ -461,6 +472,7 @@ window.handleTNTExplosion = function(x, y, z) {
     console.log(`全局TNT爆炸处理，位置: (${x}, ${y}, ${z})`);
     
     explodeTNT(
+        window.MinecraftArtOfExplode.config,
         window.MinecraftArtOfExplode.scene, 
         x, y, z, 
         window.MinecraftArtOfExplode.world, 

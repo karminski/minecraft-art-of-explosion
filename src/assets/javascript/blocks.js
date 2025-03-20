@@ -531,7 +531,7 @@ function startTNTTimer(block, scene, blockReferences) {
 }
 
 // TNT爆炸效果，添加计分系统参数
-function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem) {
+function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem) {
     // 爆炸之前将其移除
     world[x][y][z] = blockTypes.air;
 
@@ -633,7 +633,7 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
     const chainTNTBlocks = [];
 
     // 设置爆炸球体的最大半径
-    const explosionRadius = 3.5; // 稍微比原来的3格更大一点
+    const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
 
     // 遍历爆炸范围内的所有方块（仍使用立方体范围来遍历，但应用球形检测）
     for (let dx = -Math.ceil(explosionRadius); dx <= Math.ceil(explosionRadius); dx++) {
@@ -752,7 +752,7 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
             const delay = 50 + Math.random() * 40;
             setTimeout(() => {
                 console.log(`连锁引爆TNT: (${tntBlock.x}, ${tntBlock.y}, ${tntBlock.z})`);
-                explodeTNT(scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem);
+                explodeTNT(config, scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem);
             }, delay);
         });
     }
