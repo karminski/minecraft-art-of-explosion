@@ -59,10 +59,6 @@ class AnimalBase {
                 continue;
             }
             
-            if (world[x][y][z] !== window.blockTypes.air) {
-                highestY = y + 1; // 站在方块上方
-                break;
-            }
         }
     } catch (e) {
         console.error(`查找生成高度错误: x=${x}, z=${z}`, e);
@@ -75,14 +71,14 @@ class AnimalBase {
 }
 
     // 静态方法：补充动物 - 需要被子类实现
-    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd) {
+    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd, blockTypes) {
         console.warn("replenish必须被子类实现");
         return 0;
     }
 }
 
 // 更新所有动物的位置(模拟重力、碰撞和随机移动)
-function updateAnimals(animals, world, worldSize, deltaTime, player = null) {
+function updateAnimals(animals, world, worldSize, deltaTime, player = null, blockTypes) {
     // 防止deltaTime过大或为NaN
     if (isNaN(deltaTime) || deltaTime > 1000) {
         console.error(`无效的deltaTime: ${deltaTime}, 使用默认值`);
@@ -104,10 +100,10 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null) {
             }
             
             // 应用物理和移动更新
-            updateAnimalPhysics(animal, world, worldSize);
+            updateAnimalPhysics(animal, world, worldSize, blockTypes);
             
             // 应用随机移动
-            moveAnimalRandomly(animal, deltaTime, world, worldSize, player, animals);
+            moveAnimalRandomly(animal, deltaTime, world, worldSize, player, animals, blockTypes);
             
             // 调用特定动物类型的动画更新
             if (animal.controller && typeof animal.controller.animateLegs === 'function') {
@@ -118,7 +114,7 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null) {
 }
 
 // 处理动物的物理更新(重力和碰撞)
-function updateAnimalPhysics(animal, world, worldSize) {
+function updateAnimalPhysics(animal, world, worldSize, blockTypes) {
     // 检查动物是否与地面接触
         let isCollidingWithGround = false;
         let groundHeight = -1;
@@ -133,8 +129,8 @@ function updateAnimalPhysics(animal, world, worldSize) {
             if (checkY < 0 || checkY >= worldSize) continue;
             
             try {
-                if (world[animalX][checkY][animalZ] !== window.blockTypes.air && 
-                    world[animalX][checkY][animalZ] !== window.blockTypes.leaves) {
+                if (world[animalX][checkY][animalZ] !== blockTypes.air && 
+                    world[animalX][checkY][animalZ] !== blockTypes.leaves) {
                             isCollidingWithGround = true;
                     groundHeight = checkY + 1 + 1.0; // 方块顶面高度 + 适当偏移
                     break;
@@ -174,7 +170,7 @@ function updateAnimalPhysics(animal, world, worldSize) {
 }
 
 // 动物随机移动逻辑
-function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, animals = null) {
+function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, animals = null, blockTypes) {
     // 如果动物没有移动相关属性，初始化它们
     if (!animal.moveProps) {
         animal.moveProps = {
@@ -289,7 +285,7 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
             );
             
             // 碰撞检测
-            let hasCollision = checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals);
+            let hasCollision = checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals, blockTypes);
             
             // 如果没有碰撞且在边界内，更新位置
             if (!hasCollision && inBounds) {
@@ -326,7 +322,7 @@ function moveAnimalRandomly(animal, deltaTime, world, worldSize, player = null, 
 }
 
 // 检查碰撞
-function checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals) {
+function checkCollision(animal, newPosX, newPosZ, world, worldSize, player, animals, blockTypes) {
     const floorX = Math.floor(newPosX);
     const floorY = Math.floor(animal.position.y);
     const floorZ = Math.floor(newPosZ);
@@ -352,10 +348,10 @@ function checkCollision(animal, newPosX, newPosZ, world, worldSize, player, anim
             const blockType = world[floorX][checkY][floorZ];
             
             // 如果是空气或树叶，则继续检测更高的方块
-            if (blockType === window.blockTypes.air || blockType === window.blockTypes.leaves) continue;
+            if (blockType === blockTypes.air || blockType === blockTypes.leaves) continue;
             
             // 如果是高度为1的方块并且在地面层，动物可以跨过
-            if (heightOffset === 0 && isLowBlock(blockType)) {
+            if (heightOffset === 0 && isLowBlock(blockType, blockTypes)) {
                 continue;
             }
             
@@ -408,64 +404,45 @@ function checkCollision(animal, newPosX, newPosZ, world, worldSize, player, anim
 }
 
 // 判断方块是否为可以越过的低矮方块(高度为1)
-function isLowBlock(blockType) {
+function isLowBlock(currentBlockType, blockTypes) {
     // 定义所有高度为1的方块类型
     const lowBlocks = [
-        window.blockTypes.flower,
-        window.blockTypes.tallgrass,
-        window.blockTypes.redstoneTorch,
-        window.blockTypes.fire,
-        window.blockTypes.redstoneWire
+        blockTypes.flower,
+        blockTypes.tallgrass,
+        blockTypes.redstoneTorch,
+        blockTypes.fire,
+        blockTypes.redstoneWire
     ];
     
-    return lowBlocks.includes(blockType);
+    return lowBlocks.includes(currentBlockType);
 }
 
 // 初始化动物系统
-function initAnimalSystem(scene, world, worldSize, textureLoader) {
+function initAnimalSystem(scene, world, worldSize, textureLoader, blockTypes) {
     console.log("正在初始化动物系统...");
+    console.log("blockTypes 状态:", blockTypes ? "已定义" : "未定义");
     
     // 检查全局 blockTypes 是否存在
-    if (!window.blockTypes) {
-        console.error("错误: window.blockTypes 未定义，需要延迟初始化");
-        // 创建一个基本的动物系统，稍后会重新初始化
-        window.animalSystem = {
-            animals: { llamas: [] },
-            initialCounts: { llamas: 0 },
-            initialized: false,
-            update: function(deltaTime, player) {
-                // 延迟初始化：检查 blockTypes 是否已设置
-                if (window.blockTypes && !this.initialized) {
-                    console.log("检测到 blockTypes 已设置，重新初始化动物系统");
-                    this.initialized = true;
-                    // 重新调用初始化
-                    initializeAnimals(scene, world, worldSize, textureLoader);
-                } else {
-                    console.log("等待 blockTypes 初始化...");
-                }
-            }
-        };
-        return;
+    if (!blockTypes) {
+        console.error("错误: blockTypes 未定义，需要延迟初始化");
+        return null;
     }
     
     // blockTypes 存在，正常初始化
-    initializeAnimals(scene, world, worldSize, textureLoader);
+    return initializeAnimals(scene, world, worldSize, textureLoader, blockTypes);
 }
 
 // 将实际初始化逻辑提取到单独的函数
-function initializeAnimals(scene, world, worldSize, textureLoader) {
+function initializeAnimals(scene, world, worldSize, textureLoader, blockTypes) {
     // 创建一个基本的动物系统
-    const tempSystem = {
+    const animalSystem = {
         animals: { llamas: [], pigs: [] },
         initialCounts: { llamas: 0, pigs: 0 },
-        initialized: true,
+        initialized: false,
         update: function(deltaTime, player) {
             console.log("动物系统正在加载中...");
         }
     };
-    
-    // 立即设置临时系统
-    window.animalSystem = tempSystem;
     
     // 导入所有动物类型
     Promise.all([
@@ -473,70 +450,63 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
         import('./animal_pig.js')
     ]).then(([{ LlamaAnimal }, { PigAnimal }]) => {
         console.log("开始初始化动物...");
-        console.log("blockTypes 状态:", window.blockTypes ? "已定义" : "未定义");
+        console.log("blockTypes 状态:", blockTypes ? "已定义" : "未定义");
         
-        if (!window.blockTypes) {
+        if (!blockTypes) {
             console.error("错误: 导入动物后 blockTypes 仍未定义！");
             return;
         }
         
-        // 创建动物容器
-        let animals = {
-            llamas: [], // 羊驼
-            pigs: []    // 猪
-        };
-        
         try {
             // 放置羊驼
-            animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, 120);
-            console.log(`已创建 ${animals.llamas.length} 只羊驼`);
+            animalSystem.animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, 120);
+            console.log(`已创建 ${animalSystem.animals.llamas.length} 只羊驼`);
             
             // 放置猪
-            animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 100);
-            console.log(`已创建 ${animals.pigs.length} 只猪`);
+            animalSystem.animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 100);
+            console.log(`已创建 ${animalSystem.animals.pigs.length} 只猪`);
         } catch (e) {
             console.error("生成动物时发生错误:", e);
             console.error(e.stack); // 打印完整堆栈
         }
         
         // 记录初始数量
-        const initialCounts = {
-            llamas: animals.llamas.length,
-            pigs: animals.pigs.length
+        animalSystem.initialCounts = {
+            llamas: animalSystem.animals.llamas.length,
+            pigs: animalSystem.animals.pigs.length
         };
         
         let lastReplenishCheck = 0;
         
-        // 更新全局动物系统对象
-        window.animalSystem = {
-            animals: animals,
-            initialCounts: initialCounts,
-            initialized: true,
-            update: function(deltaTime, player = null) {
-                try {
-                    // 更新所有动物
-                    updateAnimals(animals, world, worldSize, deltaTime, player);
-                    
-                    // 动物补充逻辑
-                    const currentTime = performance.now();
-                    if (currentTime - lastReplenishCheck > 10000) { // 每10秒检查一次
-                        replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts);
-                        lastReplenishCheck = currentTime;
-                    }
-                } catch (e) {
-                    console.error("更新动物时发生错误:", e);
+        // 更新动物系统的update方法
+        animalSystem.update = function(deltaTime, player = null) {
+            try {
+                // 更新所有动物
+                updateAnimals(animalSystem.animals, world, worldSize, deltaTime, player, blockTypes);
+                
+                // 动物补充逻辑
+                const currentTime = performance.now();
+                if (currentTime - lastReplenishCheck > 10000) { // 每10秒检查一次
+                    replenishAnimals(scene, world, worldSize, textureLoader, animalSystem.animals, animalSystem.initialCounts, blockTypes);
+                    lastReplenishCheck = currentTime;
                 }
+            } catch (e) {
+                console.error("更新动物时发生错误:", e);
             }
         };
         
+        animalSystem.initialized = true;
         console.log("动物系统初始化完成!");
+
     }).catch(error => {
         console.error("导入动物模块时出错:", error);
     });
+
+    return animalSystem;
 }
 
 // 动物补充功能
-function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts) {
+function replenishAnimals(scene, world, worldSize, textureLoader, animals, initialCounts, blockTypes) {
     // 动态导入所有动物类
     Promise.all([
         import('./animal_llama.js'),
@@ -545,13 +515,13 @@ function replenishAnimals(scene, world, worldSize, textureLoader, animals, initi
         // 检查羊驼数量
         if (animals.llamas.length < initialCounts.llamas) {
             const countToAdd = initialCounts.llamas - animals.llamas.length;
-            LlamaAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd);
+            LlamaAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd, blockTypes);
         }
         
         // 检查猪的数量
         if (animals.pigs.length < initialCounts.pigs) {
             const countToAdd = initialCounts.pigs - animals.pigs.length;
-            PigAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd);
+            PigAnimal.replenish(scene, world, worldSize, textureLoader, animals, countToAdd, blockTypes);
         }
         
         // 未来可以在这里添加其他动物的补充逻辑

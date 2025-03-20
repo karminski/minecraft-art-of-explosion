@@ -229,7 +229,7 @@ class PigAnimal extends AnimalBase {
     }
 
     // 补充猪
-    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd) {
+    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd, blockTypes) {
         console.log(`准备补充 ${countToAdd} 只猪`);
         
         try {
@@ -266,7 +266,7 @@ class PigAnimal extends AnimalBase {
                 }
                 
                 // 确定安全的生成高度
-                const spawnY = PigAnimal.findSpawnHeight(world, x, z, worldSize);
+                const spawnY = PigAnimal.findSpawnHeight(world, x, z, worldSize, blockTypes);
                 
                 // 设置新猪的位置和物理属性
                 pig.position.set(x + 0.5, spawnY, z + 0.5);

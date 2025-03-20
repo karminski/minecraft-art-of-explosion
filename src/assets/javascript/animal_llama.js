@@ -261,7 +261,7 @@ class LlamaAnimal extends AnimalBase {
     }
 
     // 查找羊驼生成的安全高度
-    static findSpawnHeight(world, x, z, worldSize) {
+    static findSpawnHeight(world, x, z, worldSize, blockTypes) {
         // 找到该坐标上最高的非空气方块
         let highestY = 0;
         
@@ -285,7 +285,7 @@ class LlamaAnimal extends AnimalBase {
                     continue;
                 }
                 
-                if (world[x][y][z] !== window.blockTypes.air) {
+                if (world[x][y][z] !== blockTypes.air) {
                     highestY = y + 1; // 站在方块上方
                     break;
                 }
@@ -301,7 +301,7 @@ class LlamaAnimal extends AnimalBase {
     }
     
     // 补充羊驼
-    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd) {
+    static replenish(scene, world, worldSize, textureLoader, animals, countToAdd, blockTypes) {
         console.log(`准备补充 ${countToAdd} 只羊驼`);
         
         try {
@@ -338,7 +338,7 @@ class LlamaAnimal extends AnimalBase {
                 }
                 
                 // 确定安全的生成高度
-                const spawnY = LlamaAnimal.findSpawnHeight(world, x, z, worldSize);
+                const spawnY = LlamaAnimal.findSpawnHeight(world, x, z, worldSize, blockTypes);
                 
                 // 设置新羊驼的位置和物理属性
                 llama.position.set(x + 0.5, spawnY, z + 0.5);
