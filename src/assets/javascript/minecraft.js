@@ -96,6 +96,12 @@ import {
 // 导出游戏实例，以便其他模块可以访问
 export function createMinefract() {
 
+    // 初始化用户数据系统
+    const userDataSystem = initUserDataSystem();
+
+    // 获取系统配置
+    const config = getConfig(userDataSystem);
+
     // 初始化场景、相机和渲染器
     const scene = new THREE.Scene();
     const camera = createMainCamera();
@@ -217,7 +223,7 @@ export function createMinefract() {
     crosshairCtx.stroke();
 
     // 初始化动物系统
-    const animalSystem = initAnimalSystem(scene, world, worldSize, textureLoader, blockTypes);
+    const animalSystem = initAnimalSystem(config, scene, world, worldSize, textureLoader, blockTypes);
 
     // 创建暂停界面
     const pauseOverlay = createPauseOverlay();
@@ -230,6 +236,7 @@ export function createMinefract() {
 
     // 初始化计分系统，传入所有需要解除的监听器
     const scoreSystem = initScoreSystem(
+        config,
         document, 
         tearDownMouseLock, 
         mouseLockListeners, 
@@ -241,11 +248,6 @@ export function createMinefract() {
         keyboardControlsListeners
     );
 
-    // 初始化用户数据系统
-    const userDataSystem = initUserDataSystem();
-
-    // 获取系统配置
-    const config = getConfig(userDataSystem);
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {

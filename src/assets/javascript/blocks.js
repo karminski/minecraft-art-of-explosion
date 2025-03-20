@@ -532,16 +532,19 @@ function startTNTTimer(block, scene, blockReferences) {
 
 // TNT爆炸效果，添加计分系统参数
 function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem) {
+    // 设置爆炸球体的最大半径
+    const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
+
     // 爆炸之前将其移除
     world[x][y][z] = blockTypes.air;
 
     // 创建主爆炸动画，大小增加
     const mainExplosionPos = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
-    const mainExplosionSize = 3.0 + Math.random() * 3.0; // 增大到3.0-6.0之间随机值
+    const mainExplosionSize = explosionRadius + Math.random() * 3.0; // 增大到3.0-6.0之间随机值
     createExplosionAnimation(scene, mainExplosionPos, explosionTextures, mainExplosionSize);
 
     // 创建额外的爆炸效果，增加数量
-    for (let i = 0; i < 5; i++) { // 从3个增加到5个
+    for (let i = 0; i < explosionRadius; i++) { // 从3个增加到5个
         // 在主爆炸点附近随机位置创建额外爆炸
         const offset = new THREE.Vector3(
             (Math.random() - 0.5) * 4, // 范围扩大
@@ -551,7 +554,7 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
 
         const extraExplosionPos = new THREE.Vector3().addVectors(mainExplosionPos, offset);
         // 随机爆炸大小和延迟，增加范围
-        const scale = 1.5 + Math.random() * 1.5; // 1.5-3.0之间
+        const scale = explosionRadius + Math.random() * 1.5; // 1.5-3.0之间
         setTimeout(() => {
             createExplosionAnimation(scene, extraExplosionPos, explosionTextures, scale);
         }, Math.random() * 200); // 延迟相同
@@ -562,7 +565,7 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
         // 计算爆炸中心点
         const explosionCenter = new THREE.Vector3(x + 0.5, y + 0.5, z + 0.5);
         // 设置爆炸检测半径（与方块爆炸半径保持一致）
-        const animalExplosionRadius = 3.5;
+        const animalExplosionRadius = explosionRadius;
         
         // 记录被炸到的动物数量，用于计分
         let explodedAnimalCount = 0;
@@ -619,7 +622,7 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
         // 如果计分系统存在且有动物被炸到，则更新分数
         if (scoreSystem && explodedAnimalCount > 0) {
             // 每个动物加10分
-            scoreSystem.updateScore(explodedAnimalCount * 10);
+            scoreSystem.updateScore(explodedAnimalCount);
         }
     }
 
@@ -631,9 +634,6 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
 
     // 存储发现的TNT方块位置，用于后续连锁引爆
     const chainTNTBlocks = [];
-
-    // 设置爆炸球体的最大半径
-    const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
 
     // 遍历爆炸范围内的所有方块（仍使用立方体范围来遍历，但应用球形检测）
     for (let dx = -Math.ceil(explosionRadius); dx <= Math.ceil(explosionRadius); dx++) {

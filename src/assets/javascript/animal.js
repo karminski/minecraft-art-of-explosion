@@ -2,8 +2,6 @@
 // import * as THREE from 'three';
 import { mapBlockUVs, createAnimalTexture } from './utils.js';
 
-const llamaInitialCount = 120;
-const pigInitialCount = 10;
 
 // 动物基类 - 提供所有动物共享的基础功能
 class AnimalBase {
@@ -421,7 +419,7 @@ function isLowBlock(currentBlockType, blockTypes) {
 }
 
 // 初始化动物系统
-function initAnimalSystem(scene, world, worldSize, textureLoader, blockTypes) {
+function initAnimalSystem(config, scene, world, worldSize, textureLoader, blockTypes) {
     console.log("正在初始化动物系统...");
     console.log("blockTypes 状态:", blockTypes ? "已定义" : "未定义");
     
@@ -432,11 +430,16 @@ function initAnimalSystem(scene, world, worldSize, textureLoader, blockTypes) {
     }
     
     // blockTypes 存在，正常初始化
-    return initializeAnimals(scene, world, worldSize, textureLoader, blockTypes);
+    return initializeAnimals(config, scene, world, worldSize, textureLoader, blockTypes);
 }
 
 // 将实际初始化逻辑提取到单独的函数
-function initializeAnimals(scene, world, worldSize, textureLoader, blockTypes) {
+function initializeAnimals(config, scene, world, worldSize, textureLoader, blockTypes) {
+
+    // 获取配置
+    const llamaInitialCount = config.gameConfig.llamaDefaultNum;
+    const pigInitialCount = config.gameConfig.pigDefaultNum;
+
     // 创建一个基本的动物系统
     const animalSystem = {
         animals: { llamas: [], pigs: [] },

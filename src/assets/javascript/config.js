@@ -13,7 +13,7 @@ function getDefaultConfig() {
             tntDefaultExplodeRange: 3.5, // TNT爆炸范围
             tntDefaultNum: 10, // 开局TNT数量
             llamaDefaultNum: 60, // 开局羊驼数量
-            pigDefaultNum: 20, // 开局猪猪数量
+            pigDefaultNum: 2, // 开局猪猪数量
             defaultKillScore: 10, // 击杀动物得分
             itemDropProbability: 0.1, // 物品掉落概率
             defaultUserMoveSpeed: 10, // 默认玩家移动速度

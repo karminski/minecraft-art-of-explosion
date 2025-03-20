@@ -1,10 +1,10 @@
 // Game scoring and timer system
 import { initUserDataSystem } from './user_data.js';
 
-export function initScoreSystem(document, tearDownMouseLock, mouseLockListeners, tearDownMouseControls, mouseControlsListeners, tearDownAdvancedMouseControls, advancedMouseControlsListeners, tearDownKeyboardControls, keyboardControlsListeners) {
+export function initScoreSystem(config, document, tearDownMouseLock, mouseLockListeners, tearDownMouseControls, mouseControlsListeners, tearDownAdvancedMouseControls, advancedMouseControlsListeners, tearDownKeyboardControls, keyboardControlsListeners) {
     let score = 0;
     let gameActive = true;
-    let timeLeft = 60000; // 60秒，以毫秒为单位
+    let timeLeft = config.gameConfig.gameTime; // 60秒，以毫秒为单位
     let timerInterval = null;
     
     // 升级配置
@@ -328,7 +328,7 @@ export function initScoreSystem(document, tearDownMouseLock, mouseLockListeners,
             const acquirerLevel = userDataSystem.getUpgradeProgress('acquirer');
             // 每级增加10%的分数
             const bonusMultiplier = 1 + (acquirerLevel * 0.1);
-            const adjustedPoints = Math.round(points * bonusMultiplier);
+            const adjustedPoints = Math.round(points * 10 * bonusMultiplier); // 每只动物增加10分
             
             score += adjustedPoints;
             scoreDisplay.innerHTML = `分数: ${score}`;
