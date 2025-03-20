@@ -492,7 +492,7 @@ function initializeAnimals(scene, world, worldSize, textureLoader) {
             console.log(`已创建 ${animals.llamas.length} 只羊驼`);
             
             // 放置猪
-            animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 100);
+            animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 10);
             console.log(`已创建 ${animals.pigs.length} 只猪`);
         } catch (e) {
             console.error("生成动物时发生错误:", e);
