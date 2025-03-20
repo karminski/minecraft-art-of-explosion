@@ -23,37 +23,108 @@ function initControlsState() {
 
 // 设置鼠标控制
 function setupMouseControls(controlsState, document) {
-    document.addEventListener('mousemove', (event) => {
+    // 创建命名的事件处理函数，以便后续可以移除
+    const handleMouseMove = (event) => {
         controlsState.mouseX = (event.clientX / window.innerWidth) * 2 - 1;
         controlsState.mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-    });
+    };
 
-    document.addEventListener('mousedown', (event) => {
+    const handleMouseDown = (event) => {
         if (event.button === 0) {
             controlsState.isMouseDown = true;
         } else if (event.button === 2) {
             controlsState.isRightMouseDown = true;
         }
-    });
+    };
 
-    document.addEventListener('mouseup', (event) => {
+    const handleMouseUp = (event) => {
         if (event.button === 0) {
             controlsState.isMouseDown = false;
         } else if (event.button === 2) {
             controlsState.isRightMouseDown = false;
         }
-    });
+    };
+
+    // 添加事件监听器
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    // 返回监听器引用，以便后续可以解除
+    return {
+        handleMouseMove,
+        handleMouseDown,
+        handleMouseUp
+    };
+}
+
+// 解除鼠标控制相关的监听器
+function tearDownMouseControls(document, listeners) {
+    // 检查是否有传入监听器引用
+    if (!listeners) {
+        console.warn("无法解除鼠标控制监听器：未提供监听器引用");
+        return;
+    }
+    
+    // 解除鼠标移动事件监听器
+    if (listeners.handleMouseMove) {
+        document.removeEventListener('mousemove', listeners.handleMouseMove);
+    }
+    
+    // 解除鼠标按下事件监听器
+    if (listeners.handleMouseDown) {
+        document.removeEventListener('mousedown', listeners.handleMouseDown);
+    }
+    
+    // 解除鼠标释放事件监听器
+    if (listeners.handleMouseUp) {
+        document.removeEventListener('mouseup', listeners.handleMouseUp);
+    }
+    
+    console.log("已解除所有鼠标控制相关监听器");
 }
 
 // 设置键盘控制
 function setupKeyboardControls(controlsState, document) {
-    document.addEventListener('keydown', (event) => {
+    // 创建命名的事件处理函数
+    const handleKeyDown = (event) => {
         controlsState.keys[event.key] = true;
-    });
+    };
     
-    document.addEventListener('keyup', (event) => {
+    const handleKeyUp = (event) => {
         controlsState.keys[event.key] = false;
-    });
+    };
+    
+    // 添加事件监听器
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    
+    // 返回监听器引用
+    return {
+        handleKeyDown,
+        handleKeyUp
+    };
+}
+
+// 解除键盘控制相关的监听器
+function tearDownKeyboardControls(document, listeners) {
+    // 检查是否有传入监听器引用
+    if (!listeners) {
+        console.warn("无法解除键盘控制监听器：未提供监听器引用");
+        return;
+    }
+    
+    // 解除键盘按下事件监听器
+    if (listeners.handleKeyDown) {
+        document.removeEventListener('keydown', listeners.handleKeyDown);
+    }
+    
+    // 解除键盘释放事件监听器
+    if (listeners.handleKeyUp) {
+        document.removeEventListener('keyup', listeners.handleKeyUp);
+    }
+    
+    console.log("已解除所有键盘控制相关监听器");
 }
 
 // 设置鼠标锁定
@@ -82,18 +153,15 @@ function setupMouseLock(controlsState, document) {
         }
     };
     
-    // 监听点击事件进行锁定
-    document.addEventListener('click', requestLock);
-    
-    // 监听键盘事件 (M键) 进行锁定
-    document.addEventListener('keydown', (event) => {
+    // 键盘锁定处理函数
+    const handleKeyLock = (event) => {
         if (event.key === 'm' && !controlsState.mouseLock) {
             requestLock();
         }
-    });
-
-    // 监听锁定状态变化
-    document.addEventListener('pointerlockchange', () => {
+    };
+    
+    // 锁定状态变化处理函数
+    const handleLockChange = () => {
         // 直接根据document.pointerLockElement更新状态
         controlsState.mouseLock = document.pointerLockElement !== null;
         
@@ -101,14 +169,34 @@ function setupMouseLock(controlsState, document) {
         if (!controlsState.mouseLock) {
             console.log("指针锁定已解除");
         }
-    });
+    };
     
-    // 监听锁定错误
-    document.addEventListener('pointerlockerror', (event) => {
+    // 锁定错误处理函数
+    const handleLockError = (event) => {
         console.error("指针锁定错误:", event);
         isRequestingLock = false;
         controlsState.mouseLock = false;
-    });
+    };
+    
+    // 监听点击事件进行锁定
+    document.addEventListener('click', requestLock);
+    
+    // 监听键盘事件 (M键) 进行锁定
+    document.addEventListener('keydown', handleKeyLock);
+
+    // 监听锁定状态变化
+    document.addEventListener('pointerlockchange', handleLockChange);
+    
+    // 监听锁定错误
+    document.addEventListener('pointerlockerror', handleLockError);
+    
+    // 返回监听器引用，以便后续可以解除
+    return {
+        requestLock,
+        handleKeyLock,
+        handleLockChange,
+        handleLockError
+    };
 }
 
 // 处理第一人称视角的鼠标旋转
@@ -137,9 +225,34 @@ function handleFirstPersonMouseLook(controlsState, player, camera, event) {
 
 // 设置高级鼠标控制
 function setupAdvancedMouseControls(controlsState, player, camera, document) {
-    document.addEventListener('mousemove', (event) => {
+    // 创建命名的事件处理函数，以便后续可以移除
+    const handleMouseMove = (event) => {
         handleFirstPersonMouseLook(controlsState, player, camera, event);
-    });
+    };
+    
+    // 添加事件监听器
+    document.addEventListener('mousemove', handleMouseMove);
+    
+    // 返回监听器引用，以便后续可以解除
+    return {
+        handleMouseMove
+    };
+}
+
+// 解除高级鼠标控制相关的监听器
+function tearDownAdvancedMouseControls(document, listeners) {
+    // 检查是否有传入监听器引用
+    if (!listeners) {
+        console.warn("无法解除高级鼠标控制监听器：未提供监听器引用");
+        return;
+    }
+    
+    // 解除鼠标移动事件监听器
+    if (listeners.handleMouseMove) {
+        document.removeEventListener('mousemove', listeners.handleMouseMove);
+    }
+    
+    console.log("已解除所有高级鼠标控制相关监听器");
 }
 
 // 设置物品快捷栏选择
@@ -221,19 +334,7 @@ function handleMouseActions(controlsState, scene, world, blockReferences, camera
     }
 }
 
-// 初始化页面加载时的鼠标锁定 - 简化此函数，避免与上面的setupMouseLock冲突
-function initPageLoadMouseLock(window) {
-    // 不再自动尝试锁定鼠标，仅添加提示信息
-    console.log("游戏已加载，点击屏幕以锁定鼠标并开始游戏");
-    
-    // 移除这部分代码，因为已经在setupMouseLock中处理了点击锁定
-    // const canvas = document.querySelector('canvas');
-    // if (canvas) {
-    //     canvas.addEventListener('click', () => {
-    //         document.documentElement.requestPointerLock();
-    //     });
-    // }
-}
+
 
 // 创建暂停界面
 function createPauseOverlay() {
@@ -316,6 +417,37 @@ function setupRestartControl(controlsState, document) {
     });
 }
 
+// 解除鼠标锁定相关的监听器
+function tearDownMouseLock(document, listeners) {
+    // 检查是否有传入监听器引用
+    if (!listeners) {
+        console.warn("无法解除鼠标锁定监听器：未提供监听器引用");
+        return;
+    }
+    
+    // 解除点击事件监听器
+    if (listeners.requestLock) {
+        document.removeEventListener('click', listeners.requestLock);
+    }
+    
+    // 解除键盘事件监听器
+    if (listeners.handleKeyLock) {
+        document.removeEventListener('keydown', listeners.handleKeyLock);
+    }
+    
+    // 解除锁定状态变化监听器
+    if (listeners.handleLockChange) {
+        document.removeEventListener('pointerlockchange', listeners.handleLockChange);
+    }
+    
+    // 解除锁定错误监听器
+    if (listeners.handleLockError) {
+        document.removeEventListener('pointerlockerror', listeners.handleLockError);
+    }
+    
+    console.log("已解除所有鼠标锁定相关监听器");
+}
+
 // 导出所有控制函数
 export {
     initControlsState,
@@ -328,10 +460,13 @@ export {
     breakBlockWithDebounce,
     placeBlockWithDebounce,
     handleMouseActions,
-    initPageLoadMouseLock,
     togglePause,
     createPauseOverlay,
     setupPauseControl,
     setupRestartControl,
-    restartGame
+    restartGame,
+    tearDownMouseLock,
+    tearDownMouseControls,
+    tearDownAdvancedMouseControls,
+    tearDownKeyboardControls
 };

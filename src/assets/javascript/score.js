@@ -1,15 +1,24 @@
 // Game scoring and timer system
 import { initUserDataSystem } from './user_data.js';
 
-export function initScoreSystem(document) {
+export function initScoreSystem(document, tearDownMouseLock, mouseLockListeners, tearDownMouseControls, mouseControlsListeners, tearDownAdvancedMouseControls, advancedMouseControlsListeners, tearDownKeyboardControls, keyboardControlsListeners) {
     let score = 0;
     let gameActive = true;
     let timeLeft = 60000; // 60秒，以毫秒为单位
     let timerInterval = null;
     
+    // 升级配置
+    const UPGRADE_CONFIG = {
+        cost: 1000,  // 每1%升级需要的奖金点数
+        maxLevel: 100 // 最大升级等级
+    };
+    
     // 初始化用户数据系统
     const userDataSystem = initUserDataSystem();
     const currentBonusPoints = userDataSystem.getBonusPoints();
+    
+    // 获取所有升级进度
+    const allUpgrades = userDataSystem.getAllUpgradeProgress();
     
     // 创建分数和计时器显示容器
     const gameInfoDisplay = document.createElement('div');
@@ -63,16 +72,23 @@ export function initScoreSystem(document) {
     gameOverDisplay.style.alignItems = 'center';
     gameOverDisplay.style.zIndex = '2000';
     gameOverDisplay.style.display = 'none';
+    document.body.appendChild(gameOverDisplay);
     
-    gameOverDisplay.innerHTML = `
+    // 动态生成游戏结束界面的HTML，包括升级系统
+    function generateGameOverHTML() {
+        // 获取最新的奖金和升级数据
+        const latestBonusPoints = userDataSystem.getBonusPoints();
+        const latestUpgrades = userDataSystem.getAllUpgradeProgress();
+        
+        return `
         <div style="background-color: rgba(50, 50, 50, 0.9); padding: 40px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);">
             <div style="font-size: 48px; margin-bottom: 20px;">游戏结束</div>
             <div id="final-score" style="font-size: 36px; margin-bottom: 15px;">最终分数: ${score}</div>
-            <div id="bonus-points" style="font-size: 28px; margin-bottom: 30px; color: gold;">总奖金: ${currentBonusPoints}</div>
+            <div id="bonus-points" style="font-size: 28px; margin-bottom: 30px; color: gold;">总奖金: ${latestBonusPoints}</div>
             
             <!-- 升级系统区域 -->
             <div id="upgrade-system" style="margin-bottom: 30px; width: 100%;">
-                <div style="font-size: 24px; margin-bottom: 15px; color: #4CAF50;">可升级项目</div>
+                <div style="font-size: 24px; margin-bottom: 15px; color: #4CAF50;">可升级项目 (1000奖金 = 1%升级)</div>
                 
                 <!-- 第一行升级项 -->
                 <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
@@ -82,12 +98,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">军火商</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, TNT 初始数量 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="armsDealer" style="width: ${latestUpgrades.armsDealer}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.armsDealer}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="armsDealer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 核爆 -->
@@ -96,12 +113,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">核爆</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, TNT 爆炸范围 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="nuclearBomb" style="width: ${latestUpgrades.nuclearBomb}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.nuclearBomb}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="nuclearBomb" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 羊驼奶 -->
@@ -110,12 +128,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">羊驼奶</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 羊驼的生成最大数量 + 10</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="llamaMilk" style="width: ${latestUpgrades.llamaMilk}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.llamaMilk}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="llamaMilk" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 猪饲料 -->
@@ -124,12 +143,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">猪饲料</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 猪猪的生成最大数量 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="pigFeed" style="width: ${latestUpgrades.pigFeed}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.pigFeed}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="pigFeed" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                 </div>
                 
@@ -141,12 +161,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">长者的眼镜</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 每局游戏最大时长 + 1s</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="glasses" style="width: ${latestUpgrades.glasses}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.glasses}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="glasses" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.glasses < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.glasses < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 奇怪的收购者 -->
@@ -155,12 +176,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">奇怪的收购者</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 消灭一只动物的得分增加10%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="acquirer" style="width: ${latestUpgrades.acquirer}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.acquirer}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="acquirer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 幸运星 -->
@@ -169,12 +191,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">幸运星</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 猪猪的道具掉落概率增加 2%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="clover" style="width: ${latestUpgrades.clover}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.clover}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="clover" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.clover < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.clover < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                     
                     <!-- 肌肉狂 -->
@@ -183,12 +206,13 @@ export function initScoreSystem(document) {
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">肌肉狂</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 人物的移动速度和跳跃高度增加 1%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" style="width: 0%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="muscle" style="width: ${latestUpgrades.muscle}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
-                            <span>0</span>
-                            <span>100</span>
+                            <span>${latestUpgrades.muscle}</span>
+                            <span>${UPGRADE_CONFIG.maxLevel}</span>
                         </div>
+                        <button class="upgrade-button" data-type="muscle" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.muscle < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.muscle < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
                     </div>
                 </div>
             </div>
@@ -196,7 +220,7 @@ export function initScoreSystem(document) {
             <button id="restart-button" style="padding: 15px 30px; font-size: 24px; background-color: #4CAF50; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s;">再来一次</button>
         </div>
     `;
-    document.body.appendChild(gameOverDisplay);
+    }
     
     // 格式化时间为 MM:SS.MS 格式
     function formatTime(ms) {
@@ -208,19 +232,70 @@ export function initScoreSystem(document) {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
     }
     
-    // 添加重新开始按钮事件
-    document.getElementById('restart-button').addEventListener('click', () => {
-        // 直接刷新页面
-        window.location.reload();
-    });
+    // 处理升级事件
+    function handleUpgrade(upgradeType) {
+        const currentProgress = userDataSystem.getUpgradeProgress(upgradeType);
+        const currentBonus = userDataSystem.getBonusPoints();
+        
+        // 检查是否可以升级
+        if (currentBonus >= UPGRADE_CONFIG.cost && currentProgress < UPGRADE_CONFIG.maxLevel) {
+            // 扣除奖金
+            const newBonus = userDataSystem.deductBonusPoints(UPGRADE_CONFIG.cost);
+            
+            // 增加升级进度
+            userDataSystem.increaseUpgradeProgress(upgradeType, 1);
+            
+            // 更新UI
+            updateGameOverUI();
+            
+            // 提供升级反馈
+            showUpgradeFeedback(upgradeType);
+        }
+    }
+    
+    // 显示升级反馈动画
+    function showUpgradeFeedback(upgradeType) {
+        const progressBar = document.querySelector(`.progress-bar[data-type="${upgradeType}"]`);
+        if (progressBar) {
+            progressBar.style.backgroundColor = '#4CAF50';
+            setTimeout(() => {
+                progressBar.style.backgroundColor = '#ff5722';
+            }, 500);
+        }
+    }
+    
+    // 更新游戏结束界面
+    function updateGameOverUI() {
+        gameOverDisplay.innerHTML = generateGameOverHTML();
+        
+        // 重新添加升级按钮事件
+        document.querySelectorAll('.upgrade-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const upgradeType = this.getAttribute('data-type');
+                handleUpgrade(upgradeType);
+            });
+        });
+        
+        // 重新添加重新开始按钮事件
+        document.getElementById('restart-button').addEventListener('click', () => {
+            window.location.reload();
+        });
+    }
+    
     
     // 开始计时器
     function startTimer() {
+        // 检查是否有长者眼镜升级，增加游戏时间
+        const glassesLevel = userDataSystem.getUpgradeProgress('glasses');
+        // 每级增加1秒，基础时间是60秒
+        const baseTime = 60000;
+        timeLeft = baseTime + (glassesLevel * 1000);
+        
         const startTime = Date.now();
         timerInterval = setInterval(() => {
             // 基于实际流逝的时间计算
             const elapsedTime = Date.now() - startTime;
-            timeLeft = Math.max(60000 - elapsedTime, 0);
+            timeLeft = Math.max((baseTime + (glassesLevel * 1000)) - elapsedTime, 0);
             
             timerDisplay.innerHTML = formatTime(timeLeft);
             
@@ -239,12 +314,18 @@ export function initScoreSystem(document) {
         updateScore: function(points) {
             if (!gameActive) return;
             
-            score += points;
+            // 检查是否有收购者升级，增加动物击杀得分
+            const acquirerLevel = userDataSystem.getUpgradeProgress('acquirer');
+            // 每级增加10%的分数
+            const bonusMultiplier = 1 + (acquirerLevel * 0.1);
+            const adjustedPoints = Math.round(points * bonusMultiplier);
+            
+            score += adjustedPoints;
             scoreDisplay.innerHTML = `分数: ${score}`;
             
             // 添加得分动画
             const scoreAnimation = document.createElement('div');
-            scoreAnimation.textContent = `+${points}`;
+            scoreAnimation.textContent = `+${adjustedPoints}`;
             scoreAnimation.style.position = 'absolute';
             scoreAnimation.style.top = '360px';
             scoreAnimation.style.left = '50%';
@@ -279,11 +360,27 @@ export function initScoreSystem(document) {
         },
         getTimeLeft: function() {
             return timeLeft;
+        },
+        getUserDataSystem: function() {
+            return userDataSystem;
         }
     };
     
     // 游戏结束函数，修改为保存分数到奖金
     function endGame() {
+        console.log('endGame');
+
+        // 无论鼠标是否锁定，都解除所有监听
+        tearDownMouseLock(document, mouseLockListeners);
+        tearDownMouseControls(document, mouseControlsListeners);
+        tearDownAdvancedMouseControls(document, advancedMouseControlsListeners);
+        tearDownKeyboardControls(document, keyboardControlsListeners);
+        
+        // 强制退出指针锁定
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
+
         if (!gameActive) return;
         
         gameActive = false;
@@ -291,13 +388,20 @@ export function initScoreSystem(document) {
         
         // 更新奖金
         const newBonusPoints = userDataSystem.addBonusPoints(score);
+        console.log('newBonusPoints:', newBonusPoints);
         
-        // 更新结束画面显示
-        document.getElementById('final-score').textContent = `最终分数: ${score}`;
-        document.getElementById('bonus-points').textContent = `总奖金: ${newBonusPoints}`;
+        // 生成结束界面HTML
+        gameOverDisplay.innerHTML = generateGameOverHTML();
+        
+        // 添加升级按钮事件
+        document.querySelectorAll('.upgrade-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const upgradeType = this.getAttribute('data-type');
+                handleUpgrade(upgradeType);
+            });
+        });
+        
+        // 显示游戏结束界面
         gameOverDisplay.style.display = 'flex';
-        
-        // 禁用所有控制
-        document.exitPointerLock();
     }
 }

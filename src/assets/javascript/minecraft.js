@@ -53,11 +53,14 @@ import {
     breakBlockWithDebounce,
     placeBlockWithDebounce,
     handleMouseActions,
-    initPageLoadMouseLock,
     togglePause,
     createPauseOverlay,
     setupPauseControl,
-    setupRestartControl
+    setupRestartControl,
+    tearDownMouseLock,
+    tearDownMouseControls,
+    tearDownAdvancedMouseControls,
+    tearDownKeyboardControls
 } from './controls.js';
 
 // 添加导入camera.js中的函数
@@ -166,17 +169,17 @@ export function createMinefract() {
     // 替换全局键鼠控制变量为控制状态对象
     const controlsState = initControlsState();
 
-    // 移除原始的鼠标控制代码，使用新函数代替
-    setupMouseControls(controlsState, document);
+    // 鼠标控制
+    const mouseControlsListeners = setupMouseControls(controlsState, document);
 
-    // 移除原始的键盘控制代码，使用新函数代替
-    setupKeyboardControls(controlsState, document);
+    // 键盘控制代
+    const keyboardControlsListeners = setupKeyboardControls(controlsState, document);
 
-    // 移除原始的鼠标锁定代码，使用新函数代替
-    setupMouseLock(controlsState, document);
+    // 鼠标锁定
+    const mouseLockListeners =setupMouseLock(controlsState, document);
 
     // 设置高级鼠标控制（处理第一人称视角）
-    setupAdvancedMouseControls(controlsState, player, camera, document);
+    const advancedMouseControlsListeners = setupAdvancedMouseControls(controlsState, player, camera, document);
 
     // 设置物品快捷栏选择
     setupInventorySelection(inventory, character, blockTypes, textures, materials, document);
@@ -220,8 +223,18 @@ export function createMinefract() {
     // 设置重启游戏控制
     setupRestartControl(controlsState, document);
 
-    // 初始化计分系统
-    const scoreSystem = initScoreSystem(document);
+    // 初始化计分系统，传入所有需要解除的监听器
+    const scoreSystem = initScoreSystem(
+        document, 
+        tearDownMouseLock, 
+        mouseLockListeners, 
+        tearDownMouseControls, 
+        mouseControlsListeners,
+        tearDownAdvancedMouseControls,
+        advancedMouseControlsListeners,
+        tearDownKeyboardControls,
+        keyboardControlsListeners
+    );
 
     // 初始化用户数据系统
     const userDataSystem = initUserDataSystem();
@@ -392,8 +405,6 @@ export function createMinefract() {
     // 开始动画循环
     animate();
 
-    // 使用新的函数初始化页面加载时的鼠标锁定
-    initPageLoadMouseLock(window);
 
 
     return {
