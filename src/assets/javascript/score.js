@@ -268,18 +268,28 @@ export function initScoreSystem(document, tearDownMouseLock, mouseLockListeners,
     function updateGameOverUI() {
         gameOverDisplay.innerHTML = generateGameOverHTML();
         
-        // 重新添加升级按钮事件
-        document.querySelectorAll('.upgrade-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const upgradeType = this.getAttribute('data-type');
-                handleUpgrade(upgradeType);
+        // 使用延时确保DOM完全更新后再添加事件监听
+        setTimeout(() => {
+            // 重新添加升级按钮事件
+            document.querySelectorAll('.upgrade-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    const upgradeType = this.getAttribute('data-type');
+                    handleUpgrade(upgradeType);
+                });
             });
-        });
-        
-        // 重新添加重新开始按钮事件
-        document.getElementById('restart-button').addEventListener('click', () => {
-            window.location.reload();
-        });
+            
+            // 重新添加重新开始按钮事件
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton) {
+                restartButton.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    window.location.reload();
+                });
+            }
+        }, 100);
     }
     
     
@@ -393,15 +403,55 @@ export function initScoreSystem(document, tearDownMouseLock, mouseLockListeners,
         // 生成结束界面HTML
         gameOverDisplay.innerHTML = generateGameOverHTML();
         
-        // 添加升级按钮事件
-        document.querySelectorAll('.upgrade-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const upgradeType = this.getAttribute('data-type');
-                handleUpgrade(upgradeType);
-            });
-        });
-        
         // 显示游戏结束界面
         gameOverDisplay.style.display = 'flex';
+        
+        // 重要：使用延时确保DOM完全更新后再添加事件监听
+        setTimeout(() => {
+            // 添加升级按钮事件
+            document.querySelectorAll('.upgrade-button').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    const upgradeType = this.getAttribute('data-type');
+                    handleUpgrade(upgradeType);
+                });
+            });
+            
+            // 添加重启按钮事件
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton) {
+                restartButton.addEventListener('click', function(e) {
+                    // 阻止事件冒泡
+                    e.stopPropagation();
+                    window.location.reload();
+                });
+            }
+            
+            console.log('所有游戏结束界面按钮事件已绑定');
+        }, 100);
+        
+        // 移除可能干扰点击的元素
+        removeInterferenceElements();
+    }
+
+    // 添加这个新函数，用于移除可能干扰点击的元素
+    function removeInterferenceElements() {
+        // 获取并移除可能遮挡点击的元素
+        const possibleInterferences = [
+            document.getElementById('crosshair'),
+            document.getElementById('debug-panel')
+        ];
+        
+        possibleInterferences.forEach(element => {
+            if (element) {
+                element.style.pointerEvents = 'none';
+            }
+        });
+        
+        // 确保游戏结束界面的点击事件能够正常工作
+        gameOverDisplay.style.pointerEvents = 'auto';
+        
+        console.log('已移除可能干扰点击的元素');
     }
 }
