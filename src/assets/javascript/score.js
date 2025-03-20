@@ -1,9 +1,15 @@
 // Game scoring and timer system
+import { initUserDataSystem } from './user_data.js';
+
 export function initScoreSystem(document) {
     let score = 0;
     let gameActive = true;
     let timeLeft = 60000; // 60秒，以毫秒为单位
     let timerInterval = null;
+    
+    // 初始化用户数据系统
+    const userDataSystem = initUserDataSystem();
+    const currentBonusPoints = userDataSystem.getBonusPoints();
     
     // 创建分数和计时器显示容器
     const gameInfoDisplay = document.createElement('div');
@@ -61,7 +67,8 @@ export function initScoreSystem(document) {
     gameOverDisplay.innerHTML = `
         <div style="background-color: rgba(50, 50, 50, 0.9); padding: 40px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);">
             <div style="font-size: 48px; margin-bottom: 20px;">游戏结束</div>
-            <div id="final-score" style="font-size: 36px; margin-bottom: 30px;">最终分数: ${score}</div>
+            <div id="final-score" style="font-size: 36px; margin-bottom: 15px;">最终分数: ${score}</div>
+            <div id="bonus-points" style="font-size: 28px; margin-bottom: 30px; color: gold;">总奖金: ${currentBonusPoints}</div>
             <button id="restart-button" style="padding: 15px 30px; font-size: 24px; background-color: #4CAF50; color: white; border: none; border-radius: 10px; cursor: pointer; transition: background-color 0.3s;">再来一次</button>
         </div>
     `;
@@ -151,14 +158,19 @@ export function initScoreSystem(document) {
         }
     };
     
-    // 游戏结束函数
+    // 游戏结束函数，修改为保存分数到奖金
     function endGame() {
         if (!gameActive) return;
         
         gameActive = false;
         clearInterval(timerInterval);
         
+        // 更新奖金
+        const newBonusPoints = userDataSystem.addBonusPoints(score);
+        
+        // 更新结束画面显示
         document.getElementById('final-score').textContent = `最终分数: ${score}`;
+        document.getElementById('bonus-points').textContent = `总奖金: ${newBonusPoints}`;
         gameOverDisplay.style.display = 'flex';
         
         // 禁用所有控制

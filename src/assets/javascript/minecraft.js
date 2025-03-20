@@ -80,6 +80,11 @@ import {
     initScoreSystem
 } from './score.js';
 
+// 添加导入user_data.js中的函数
+import {
+    initUserDataSystem
+} from './user_data.js';
+
 // 导出游戏实例，以便其他模块可以访问
 export function createMinefract() {
 
@@ -217,6 +222,9 @@ export function createMinefract() {
 
     // 初始化计分系统
     const scoreSystem = initScoreSystem(document);
+
+    // 初始化用户数据系统
+    const userDataSystem = initUserDataSystem();
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
@@ -402,7 +410,8 @@ export function createMinefract() {
         character: character,
         textures: textures,
         animalSystem: animalSystem,
-        scoreSystem: scoreSystem
+        scoreSystem: scoreSystem,
+        userDataSystem: userDataSystem
     }
 }
 
