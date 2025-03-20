@@ -56,7 +56,8 @@ import {
     initPageLoadMouseLock,
     togglePause,
     createPauseOverlay,
-    setupPauseControl
+    setupPauseControl,
+    setupRestartControl
 } from './controls.js';
 
 // 添加导入camera.js中的函数
@@ -206,6 +207,9 @@ export function createMinefract() {
 
     // 设置暂停控制
     setupPauseControl(controlsState, pauseOverlay, document, animalSystem);
+
+    // 设置重启游戏控制
+    setupRestartControl(controlsState, document);
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
@@ -393,6 +397,9 @@ export function createMinefract() {
         animalSystem: animalSystem
     }
 }
+
+// 将开始游戏方法暴露给全局
+window.createMinefract = createMinefract;
 
 // 创建游戏实例
 window.MinecraftArtOfExplode = createMinefract();

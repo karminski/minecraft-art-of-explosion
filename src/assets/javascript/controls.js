@@ -294,6 +294,28 @@ function setupPauseControl(controlsState, pauseOverlay, document, animalSystem) 
     });
 }
 
+// 添加重启游戏功能
+function restartGame() {
+    console.log('重启游戏...');
+    
+    window.location.reload();
+    
+    console.log('游戏已重启');
+}
+
+// 设置重启游戏快捷键
+function setupRestartControl(controlsState, document) {
+    document.addEventListener('keydown', (event) => {
+        if (event.ctrlKey && (event.key === 'r' || event.key === 'R')) {
+            // 阻止浏览器默认的刷新行为
+            event.preventDefault();
+            
+            // 重启游戏
+            restartGame();
+        }
+    });
+}
+
 // 导出所有控制函数
 export {
     initControlsState,
@@ -309,5 +331,7 @@ export {
     initPageLoadMouseLock,
     togglePause,
     createPauseOverlay,
-    setupPauseControl
+    setupPauseControl,
+    setupRestartControl,
+    restartGame
 };
