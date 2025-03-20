@@ -156,12 +156,6 @@ export function createMinefract() {
     // 替换全局键鼠控制变量为控制状态对象
     const controlsState = initControlsState();
 
-    // 创建暂停界面
-    const pauseOverlay = createPauseOverlay();
-
-    // 设置暂停控制
-    setupPauseControl(controlsState, pauseOverlay, document);
-
     // 移除原始的鼠标控制代码，使用新函数代替
     setupMouseControls(controlsState, document);
 
@@ -206,6 +200,12 @@ export function createMinefract() {
 
     // 初始化动物系统
     const animalSystem = initAnimalSystem(scene, world, worldSize, textureLoader, blockTypes);
+
+    // 创建暂停界面
+    const pauseOverlay = createPauseOverlay();
+
+    // 设置暂停控制
+    setupPauseControl(controlsState, pauseOverlay, document, animalSystem);
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
@@ -394,10 +394,10 @@ export function createMinefract() {
     }
 }
 
-// 开始游戏
+// 创建游戏实例
 window.MinecraftArtOfExplode = createMinefract();
 
-// NT爆炸事件监听器 - 使用全局动物对象访问
+// TNT爆炸事件监听器 - 使用全局动物对象访问
 document.addEventListener('tnt-explosion', (event) => {
     const { x, y, z } = event.detail;
     console.log(`TNT爆炸触发，位置: (${x}, ${y}, ${z})`);
@@ -419,4 +419,26 @@ document.addEventListener('tnt-explosion', (event) => {
         window.MinecraftArtOfExplode.textures
     );
 });
+
+// 保留现有的全局函数处理方式作为备份 - 修改为使用全局动物对象
+window.handleTNTExplosion = function(x, y, z) {
+    console.log(`全局TNT爆炸处理，位置: (${x}, ${y}, ${z})`);
+    
+    explodeTNT(
+        window.MinecraftArtOfExplode.scene, 
+        x, y, z, 
+        window.MinecraftArtOfExplode.world, 
+        window.MinecraftArtOfExplode.blockReferences, 
+        window.MinecraftArtOfExplode.worldSize, 
+        window.MinecraftArtOfExplode.blockTypes, 
+        window.MinecraftArtOfExplode.explosionTextures, 
+        window.MinecraftArtOfExplode.materials, 
+        window.MinecraftArtOfExplode.explosionDebris,
+        window.MinecraftArtOfExplode.animalSystem.animals,
+        window.MinecraftArtOfExplode.inventory,
+        window.MinecraftArtOfExplode.updateInventoryUI,
+        window.MinecraftArtOfExplode.character,
+        window.MinecraftArtOfExplode.textures
+    );
+};
 

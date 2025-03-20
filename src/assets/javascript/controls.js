@@ -258,7 +258,7 @@ function createPauseOverlay() {
 }
 
 // 暂停/恢复切换函数 - 修改为使用controlsState
-function togglePause(controlsState, pauseOverlay) {
+function togglePause(controlsState, pauseOverlay, animalSystem) {
     // 切换暂停状态
     controlsState.isPaused = !controlsState.isPaused;
     
@@ -266,17 +266,17 @@ function togglePause(controlsState, pauseOverlay) {
     pauseOverlay.style.display = controlsState.isPaused ? 'flex' : 'none';
     
     // 如果暂停，则暂停所有动物的动画
-    if (window.animalSystem && window.animalSystem.animals) {
+    if (animalSystem && animalSystem.animals) {
         // 设置所有羊驼的暂停状态
-        if (window.animalSystem.animals.llamas) {
-            window.animalSystem.animals.llamas.forEach(llama => {
+        if (animalSystem.animals.llamas) {
+            animalSystem.animals.llamas.forEach(llama => {
                 llama.pauseAnimation = controlsState.isPaused;
             });
         }
         
         // 设置所有猪的暂停状态
-        if (window.animalSystem.animals.pigs) {
-            window.animalSystem.animals.pigs.forEach(pig => {
+        if (animalSystem.animals.pigs) {
+            animalSystem.animals.pigs.forEach(pig => {
                 pig.pauseAnimation = controlsState.isPaused;
             });
         }
@@ -286,10 +286,10 @@ function togglePause(controlsState, pauseOverlay) {
 }
 
 // 设置暂停控制
-function setupPauseControl(controlsState, pauseOverlay, document) {
+function setupPauseControl(controlsState, pauseOverlay, document, animalSystem) {
     document.addEventListener('keydown', (event) => {
         if (event.key === 'p' || event.key === 'P') {
-            togglePause(controlsState, pauseOverlay);
+            togglePause(controlsState, pauseOverlay, animalSystem);
         }
     });
 }

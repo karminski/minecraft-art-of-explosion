@@ -2,6 +2,9 @@
 // import * as THREE from 'three';
 import { mapBlockUVs, createAnimalTexture } from './utils.js';
 
+const llamaInitialCount = 120;
+const pigInitialCount = 10;
+
 // 动物基类 - 提供所有动物共享的基础功能
 class AnimalBase {
     constructor() {
@@ -29,7 +32,7 @@ class AnimalBase {
     }
     
     // 静态方法：在世界中随机放置动物 - 需要被子类重写
-    static placeRandomly(scene, world, worldSize, textureLoader, count) {
+    static placeRandomly(scene, world, worldSize, textureLoader, count, blockTypes) {
         console.warn("placeRandomly必须被子类实现");
         return [];
     }
@@ -459,11 +462,11 @@ function initializeAnimals(scene, world, worldSize, textureLoader, blockTypes) {
         
         try {
             // 放置羊驼
-            animalSystem.animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, 120);
+            animalSystem.animals.llamas = LlamaAnimal.placeRandomly(scene, world, worldSize, textureLoader, llamaInitialCount, blockTypes);
             console.log(`已创建 ${animalSystem.animals.llamas.length} 只羊驼`);
             
             // 放置猪
-            animalSystem.animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, 100);
+            animalSystem.animals.pigs = PigAnimal.placeRandomly(scene, world, worldSize, textureLoader, pigInitialCount, blockTypes);
             console.log(`已创建 ${animalSystem.animals.pigs.length} 只猪`);
         } catch (e) {
             console.error("生成动物时发生错误:", e);

@@ -196,7 +196,7 @@ class LlamaAnimal extends AnimalBase {
     }
 
     // 在世界中随机放置羊驼
-    static placeRandomly(scene, world, worldSize, textureLoader, count = 120) {
+    static placeRandomly(scene, world, worldSize, textureLoader, count = 120, blockTypes) {
         const llamas = [];
         
         console.log(`尝试生成 ${count} 只羊驼...`);
@@ -219,7 +219,7 @@ class LlamaAnimal extends AnimalBase {
                 // 安全地找到生成高度
                 let spawnY = 30; // 默认高度
                 try {
-                    spawnY = LlamaAnimal.findSpawnHeight(world, x, z, worldSize) + 5;
+                    spawnY = LlamaAnimal.findSpawnHeight(world, x, z, worldSize, blockTypes) + 5;
                     console.log(`计算得到生成高度: y=${spawnY}`);
                     
                     // 确保Y不是NaN
