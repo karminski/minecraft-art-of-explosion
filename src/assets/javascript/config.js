@@ -16,8 +16,8 @@ function getDefaultConfig() {
             pigDefaultNum: 2, // 开局猪猪数量
             defaultKillScore: 10, // 击杀动物得分
             itemDropProbability: 0.1, // 物品掉落概率
-            defaultUserMoveSpeed: 10, // 默认玩家移动速度
-            defaultUserJumpScale: 10, // 默认玩家跳跃高度
+            defaultUserMoveSpeed: 0.05, // 默认玩家移动速度
+            defaultUserJumpScale: 0.1, // 默认玩家跳跃高度
             itemDropList: { // 默认猪猪掉落列表
                 theWorld: 0.01,
                 fusionBomb: 0.05,

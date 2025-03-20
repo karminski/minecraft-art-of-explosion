@@ -169,7 +169,7 @@ export function createMinefract() {
     let character; // 全局变量，用于存储角色对象
 
     // 玩家控制 - 使用安全位置初始化
-    const player = createPlayer(findSafeSpawnPosition(world, worldSize));
+    const player = createPlayer(config, findSafeSpawnPosition(world, worldSize));
 
     // 创建角色
     character = createCharacter(characterGroup, textureLoader);

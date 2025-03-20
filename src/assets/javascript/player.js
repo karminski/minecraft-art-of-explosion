@@ -3,12 +3,12 @@ import { updateInventoryUI, updateHeldItem } from './inventory.js';
 import { mapBlockUVs, updateFaceUVs, createAnimalTexture } from './utils.js';
 
 // 玩家对象工厂函数
-export function createPlayer(initialPosition) {
+export function createPlayer(config, initialPosition) {
     return {
         position: initialPosition,
         rotation: new THREE.Vector2(0, 0),
-        speed: 0.1,
-        jumpSpeed: 0.3,
+        speed: config.gameConfig.defaultUserMoveSpeed,
+        jumpSpeed: config.gameConfig.defaultUserJumpScale,
         isJumping: false,
         gravity: 0.005,
         velocity: new THREE.Vector3(0, 0, 0)

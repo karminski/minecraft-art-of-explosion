@@ -233,8 +233,8 @@ class PigAnimal extends AnimalBase {
         console.log(`准备补充 ${countToAdd} 只猪`);
         
         try {
-            // 一次最多补充5只，避免突然生成太多导致卡顿
-            const batchSize = Math.min(countToAdd, 5);
+            // 一次最多补充500只，避免突然生成太多导致卡顿
+            const batchSize = Math.min(countToAdd, 500);
             
             // 创建新猪并添加到现有数组中
             for (let i = 0; i < batchSize; i++) {
