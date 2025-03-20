@@ -530,8 +530,8 @@ function startTNTTimer(block, scene, blockReferences) {
     };
 }
 
-// TNT爆炸效果
-function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures) {
+// TNT爆炸效果，添加计分系统参数
+function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem) {
     // 爆炸之前将其移除
     world[x][y][z] = blockTypes.air;
 
@@ -564,6 +564,9 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
         // 设置爆炸检测半径（与方块爆炸半径保持一致）
         const animalExplosionRadius = 3.5;
         
+        // 记录被炸到的动物数量，用于计分
+        let explodedAnimalCount = 0;
+        
         // 遍历所有动物类型（如羊驼、猪等）
         Object.keys(animals).forEach(animalType => {
             if (animals[animalType] && animals[animalType].length > 0) {
@@ -582,6 +585,7 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
                     if (distance <= animalExplosionRadius) {
                         // 将索引添加到被炸动物列表中（倒序添加以便后续删除）
                         explodedAnimals.unshift(index);
+                        explodedAnimalCount++; // 增加被炸动物计数
                         
                         // 在动物位置创建小爆炸特效
                         createExplosionAnimation(scene, animal.position.clone(), explosionTextures, 1.5);
@@ -611,6 +615,12 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
                 });
             }
         });
+        
+        // 如果计分系统存在且有动物被炸到，则更新分数
+        if (scoreSystem && explodedAnimalCount > 0) {
+            // 每个动物加10分
+            scoreSystem.updateScore(explodedAnimalCount * 10);
+        }
     }
 
     // 从TNT发出射线检测
@@ -742,7 +752,7 @@ function explodeTNT(scene, x, y, z, world, blockReferences, worldSize, blockType
             const delay = 50 + Math.random() * 40;
             setTimeout(() => {
                 console.log(`连锁引爆TNT: (${tntBlock.x}, ${tntBlock.y}, ${tntBlock.z})`);
-                explodeTNT(scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures);
+                explodeTNT(scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem);
             }, delay);
         });
     }

@@ -75,6 +75,10 @@ import {
     initAnimalSystem
 } from './animal.js';
 
+// 添加导入score.js中的函数
+import {
+    initScoreSystem
+} from './score.js';
 
 // 导出游戏实例，以便其他模块可以访问
 export function createMinefract() {
@@ -211,6 +215,9 @@ export function createMinefract() {
     // 设置重启游戏控制
     setupRestartControl(controlsState, document);
 
+    // 初始化计分系统
+    const scoreSystem = initScoreSystem(document);
+
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
         requestAnimationFrame(animate);
@@ -227,7 +234,7 @@ export function createMinefract() {
         lastFrameTime = currentTime;
 
         // 在暂停状态下，只更新基本UI但不更新游戏逻辑
-        if (controlsState.isPaused) {
+        if (controlsState.isPaused || !scoreSystem.isGameActive()) {
             // 更新调试面板，显示暂停状态
             const debugPanel = document.getElementById('debug-panel');
             debugPanel.innerHTML =
@@ -394,7 +401,8 @@ export function createMinefract() {
         updateInventoryUI: updateInventoryUI,
         character: character,
         textures: textures,
-        animalSystem: animalSystem
+        animalSystem: animalSystem,
+        scoreSystem: scoreSystem
     }
 }
 
@@ -404,7 +412,7 @@ window.createMinefract = createMinefract;
 // 创建游戏实例
 window.MinecraftArtOfExplode = createMinefract();
 
-// TNT爆炸事件监听器 - 使用全局动物对象访问
+// TNT爆炸事件监听器 - 修改为包含计分系统更新
 document.addEventListener('tnt-explosion', (event) => {
     const { x, y, z } = event.detail;
     console.log(`TNT爆炸触发，位置: (${x}, ${y}, ${z})`);
@@ -423,11 +431,12 @@ document.addEventListener('tnt-explosion', (event) => {
         window.MinecraftArtOfExplode.inventory,
         window.MinecraftArtOfExplode.updateInventoryUI,
         window.MinecraftArtOfExplode.character,
-        window.MinecraftArtOfExplode.textures
+        window.MinecraftArtOfExplode.textures,
+        window.MinecraftArtOfExplode.scoreSystem
     );
 });
 
-// 保留现有的全局函数处理方式作为备份 - 修改为使用全局动物对象
+// 全局TNT爆炸处理函数 - 也需要修改
 window.handleTNTExplosion = function(x, y, z) {
     console.log(`全局TNT爆炸处理，位置: (${x}, ${y}, ${z})`);
     
@@ -445,7 +454,8 @@ window.handleTNTExplosion = function(x, y, z) {
         window.MinecraftArtOfExplode.inventory,
         window.MinecraftArtOfExplode.updateInventoryUI,
         window.MinecraftArtOfExplode.character,
-        window.MinecraftArtOfExplode.textures
+        window.MinecraftArtOfExplode.textures,
+        window.MinecraftArtOfExplode.scoreSystem
     );
 };
 
