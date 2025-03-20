@@ -1,73 +1,62 @@
-// 道具栏功能 - 改用工厂函数模式
-function createInventory(blockTypes) {
-    // 创建新的库存对象
-    return {
-        slots: [
-            { type: blockTypes.grass, count: 64 },
-            { type: blockTypes.dirt, count: 64 },
-            { type: blockTypes.stone, count: 64 },
-            { type: blockTypes.cobblestone, count: 64 },
-            { type: blockTypes.wood, count: 64 },
-            { type: blockTypes.planks, count: 64 },
-            { type: blockTypes.sand, count: 64 },
-            { type: blockTypes.glass, count: 64 },
-            { type: blockTypes.tnt, count: 64 }
-        ],
-        selectedIndex: 0
-    };
-}
+// 道具栏功能
+const inventory = {
+    items: [
+        { name: 'pickaxe', texture: 'assets/images/pickaxe.png', count: 1 },
+        { name: 'tnt', texture: 'assets/images/tnt-side.jpg', count: 10 },
+        { name: 'dirt', texture: 'assets/images/dirt.png', count: 0 },
+        { name: 'stone', texture: 'assets/images/stone.png', count: 0 },
+        { name: 'tree', texture: 'assets/images/tree.png', count: 0 },
+        { name: 'leaves', texture: 'assets/images/leaves.png', count: 0 },
+        { name: 'empty', texture: '', count: 0 },
+        { name: 'empty', texture: '', count: 0 }
+    ],
+    selectedIndex: 0
+};
 
 // 添加这个全局变量用于存储手持物品引用
 let heldItemMesh = null;
 
 // 创建道具栏
-function createInventoryUI(inventory) {
+function createInventoryUI() {
     const inventoryElement = document.getElementById('inventory');
     inventoryElement.innerHTML = '';
 
-    inventory.slots.forEach((slot, index) => {
+    inventory.items.forEach((item, index) => {
         const slotElement = document.createElement('div');
         slotElement.className = 'inventory-slot';
         if (index === inventory.selectedIndex) {
             slotElement.classList.add('selected');
         }
 
-        if (slot.type && slot.type.texture) {
+        if (item.texture) {
             const itemElement = document.createElement('img');
-            itemElement.src = slot.type.texture || '';
+            itemElement.src = item.texture;
             itemElement.className = 'inventory-item';
             slotElement.appendChild(itemElement);
         }
 
         // 添加数量显示
-        if (slot.count > 0) {
+        if (item.count > 0) {
             const countElement = document.createElement('div');
             countElement.className = 'item-count';
-            countElement.textContent = `x${slot.count}`;
+            countElement.textContent = `x${item.count}`;
             slotElement.appendChild(countElement);
         }
 
         slotElement.addEventListener('click', () => {
             inventory.selectedIndex = index;
-            updateInventoryUI(inventory);
+            updateInventoryUI();
         });
 
         inventoryElement.appendChild(slotElement);
     });
 }
 
+
 // 更新道具栏UI
-function updateInventoryUI(inventory, character, blockTypes, textures, materials) {
-    if (!inventory || !inventory.slots) {
-        console.error("Invalid inventory object:", inventory);
-        return;
-    }
-    
+function updateInventoryUI(character, blockTypes, textures, materials) {
     const slots = document.querySelectorAll('.inventory-slot');
     slots.forEach((slot, index) => {
-        // 安全检查
-        if (index >= inventory.slots.length) return;
-        
         // 更新选中状态
         slot.classList.remove('selected');
         if (index === inventory.selectedIndex) {
@@ -81,7 +70,7 @@ function updateInventoryUI(inventory, character, blockTypes, textures, materials
         }
 
         // 添加新的计数显示
-        const count = inventory.slots[index].count;
+        const count = inventory.items[index].count;
         if (count > 0) {
             const countElement = document.createElement('div');
             countElement.className = 'item-count';
@@ -91,31 +80,22 @@ function updateInventoryUI(inventory, character, blockTypes, textures, materials
     });
 
     // 调试信息
-    console.log("物品栏已更新:", inventory.slots.map(item => item.count));
+    console.log("物品栏已更新:", inventory.items.map(item => item.count));
 
     // 更新手持物品
-    if (character && blockTypes && textures && materials) {
-        updateHeldItem(character, blockTypes, textures, materials, inventory);
-    }
+    updateHeldItem(character, blockTypes, textures, materials);
 }
 
-// 添加这个新函数来更新手持物品 - 修改为接收inventory参数
-function updateHeldItem(character, blockTypes, textures, materials, inventory) {
-    // 安全检查
-    if (!character || !inventory || !inventory.slots) {
-        console.error("Invalid parameters for updateHeldItem");
-        return;
-    }
-    
+
+// 添加这个新函数来更新手持物品
+function updateHeldItem(character, blockTypes, textures, materials) {
     // 先移除旧的手持物品（如果存在）
     if (heldItemMesh) {
         character.rightArm.remove(heldItemMesh);
-        if (heldItemMesh.geometry) {
-            heldItemMesh.geometry.dispose();
-        }
+        heldItemMesh.geometry.dispose();
         if (heldItemMesh.material) {
             if (Array.isArray(heldItemMesh.material)) {
-                heldItemMesh.material.forEach(m => m && m.dispose());
+                heldItemMesh.material.forEach(m => m.dispose());
             } else {
                 heldItemMesh.material.dispose();
             }
@@ -124,12 +104,7 @@ function updateHeldItem(character, blockTypes, textures, materials, inventory) {
     }
 
     // 获取当前选中的物品
-    const selectedIndex = inventory.selectedIndex;
-    if (selectedIndex < 0 || selectedIndex >= inventory.slots.length) {
-        return; // 无效的索引
-    }
-    
-    const selectedItem = inventory.slots[selectedIndex];
+    const selectedItem = inventory.items[inventory.selectedIndex];
 
     // 如果物品数量为0或者是道具1（矿镐）则不创建手持物品
     if (selectedItem.count <= 0 && inventory.selectedIndex !== 0) {
@@ -137,10 +112,28 @@ function updateHeldItem(character, blockTypes, textures, materials, inventory) {
     }
 
     // 根据选中的物品创建对应的方块
-    if (inventory.selectedIndex >= 0) {
-        let blockType = selectedItem.type;
-        if (!blockType) return;
-        
+    if (inventory.selectedIndex >= 1) {
+        let blockType;
+        switch (inventory.selectedIndex) {
+            case 1: // TNT
+                blockType = blockTypes.tnt;
+                break;
+            case 2: // 泥土
+                blockType = blockTypes.dirt;
+                break;
+            case 3: // 石头
+                blockType = blockTypes.stone;
+                break;
+            case 4: // 木头
+                blockType = blockTypes.tree;
+                break;
+            case 5: // 树叶
+                blockType = blockTypes.leaves;
+                break;
+            default:
+                return; // 其他道具暂不处理
+        }
+
         // 创建半尺寸的方块几何体
         const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
 
@@ -159,12 +152,7 @@ function updateHeldItem(character, blockTypes, textures, materials, inventory) {
             ];
         } else {
             // 其他方块使用单一材质
-            const materialKey = Object.keys(blockTypes).find(key => blockTypes[key] === blockType);
-            if (materialKey && materials[materialKey]) {
-                material = materials[materialKey].clone();
-            } else {
-                return; // 找不到材质
-            }
+            material = materials[Object.keys(blockTypes).find(key => blockTypes[key] === blockType)].clone();
         }
 
         // 创建方块mesh
@@ -178,8 +166,10 @@ function updateHeldItem(character, blockTypes, textures, materials, inventory) {
     }
 }
 
+
+
 export {
-    createInventory,
+    inventory,
     heldItemMesh,
     createInventoryUI,
     updateInventoryUI,
