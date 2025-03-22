@@ -95,7 +95,13 @@ import {
 
 // 添加导入skills.js中的函数
 import {
-    initSkillSystem
+    skills,
+    initSkillSystem,
+    activateSkill,
+    deactivateSkill,
+    createSkillCard3D,
+    pickupSkillCard,
+    checkSkillCardDrop
 } from './skills.js';
 
 
@@ -408,6 +414,23 @@ export function createMinefract() {
             }
         }
 
+        // 添加：检测是否拾取了技能卡
+        scene.children.forEach(object => {
+            if (object.isSkillCard) {
+                // 计算与玩家的距离
+                const distanceToPlayer = Math.sqrt(
+                    Math.pow(player.position.x - object.position.x, 2) +
+                    Math.pow(player.position.y - object.position.y, 2) +
+                    Math.pow(player.position.z - object.position.z, 2)
+                );
+                
+                // 如果玩家足够接近技能卡，拾取它
+                if (distanceToPlayer < 1.5) {
+                    pickupSkillCard(player, object, scene);
+                }
+            }
+        });
+
         // 使用当前活动摄像机进行渲染
         renderer.render(scene, activeCamera);
     }
@@ -441,7 +464,9 @@ export function createMinefract() {
         textures: textures,
         animalSystem: animalSystem,
         scoreSystem: scoreSystem,
-        userDataSystem: userDataSystem
+        userDataSystem: userDataSystem,
+        skillSystem: skillSystem,
+        checkSkillCardDrop: checkSkillCardDrop,
     }
 }
 
@@ -473,7 +498,8 @@ document.addEventListener('tnt-explosion', (event) => {
         window.MinecraftArtOfExplode.updateInventoryUI,
         window.MinecraftArtOfExplode.character,
         window.MinecraftArtOfExplode.textures,
-        window.MinecraftArtOfExplode.scoreSystem
+        window.MinecraftArtOfExplode.scoreSystem,
+        window.MinecraftArtOfExplode.checkSkillCardDrop
     );
 });
 
@@ -497,7 +523,8 @@ window.handleTNTExplosion = function(x, y, z) {
         window.MinecraftArtOfExplode.updateInventoryUI,
         window.MinecraftArtOfExplode.character,
         window.MinecraftArtOfExplode.textures,
-        window.MinecraftArtOfExplode.scoreSystem
+        window.MinecraftArtOfExplode.scoreSystem,
+        window.MinecraftArtOfExplode.checkSkillCardDrop
     );
 };
 

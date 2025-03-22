@@ -531,7 +531,7 @@ function startTNTTimer(block, scene, blockReferences) {
 }
 
 // TNT爆炸效果，添加计分系统参数
-function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem) {
+function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem, checkSkillCardDrop) {
     // 设置爆炸球体的最大半径
     const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
 
@@ -605,6 +605,23 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
                             if (typeof updateInventoryUI === 'function' && character) {
                                 updateInventoryUI(character, blockTypes, textures, materials);
                             }
+                        }
+                    }
+
+                    // 处理技能卡掉落, 只有猪猪会掉落技能卡
+                    console.log("animalType:", animalType);
+                    if (animalType === 'pigs') {
+                        const droppedSkill = checkSkillCardDrop(config);
+                        if (droppedSkill) {
+                            console.log(`猪掉落了技能卡: ${droppedSkill}`);
+
+                            // 导入createSkillCard3D函数
+                            import('./skills.js').then(({ createSkillCard3D }) => {
+                                // 在猪的位置创建技能卡
+                                createSkillCard3D(scene, animal.position.clone(), droppedSkill);
+                            }).catch(err => {
+                                console.error("导入skills.js失败:", err);
+                            });
                         }
                     }
                 });
@@ -756,6 +773,7 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
             }, delay);
         });
     }
+
 }
 
 // 导出所有模块
