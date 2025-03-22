@@ -180,6 +180,26 @@ function activateSkill(index) {
     
     // 开始倒计时
     startSkillTimer(index);
+
+    // 检查技能类型并执行相应操作
+    if (skills.items[index].name === 'theWorld') {
+        // 播放时间停止音效
+        playTheWorldSound();
+        
+        // 添加反色滤镜效果
+        applyInvertFilter(true);
+        
+        // 暂停所有动物
+        //if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.animalSystem) {
+        //    window.MinecraftArtOfExplode.animalSystem.pauseAnimals(true);
+        //}
+        
+        // 暂停游戏计时器 - 确保调用正确
+        if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.scoreSystem) {
+            console.log("技能激活: 暂停计时器");
+            window.MinecraftArtOfExplode.scoreSystem.pauseTimer(true, skills.items[index].name);
+        }
+    }
 }
 
 // 停用技能
@@ -206,6 +226,23 @@ function deactivateSkill(index) {
     
     // 开始冷却倒计时
     startCooldownTimer(index);
+
+    // 检查技能类型并执行相应操作
+    if (skills.items[index].name === 'theWorld') {
+        // 移除反色滤镜效果
+        applyInvertFilter(false);
+        
+        // 恢复所有动物
+        if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.animalSystem) {
+            window.MinecraftArtOfExplode.animalSystem.pauseAnimals(false);
+        }
+        
+        // 恢复游戏计时器 - 确保调用正确
+        if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.scoreSystem) {
+            console.log("技能结束: 恢复计时器");
+            window.MinecraftArtOfExplode.scoreSystem.pauseTimer(false);
+        }
+    }
 }
 
 // 开始技能计时器
@@ -554,6 +591,67 @@ function checkSkillCardDrop(config) {
     return null;
 }
 
+// 添加播放时间停止音效的函数
+function playTheWorldSound() {
+    const audio = new Audio('assets/sounds/the-world.mp3');
+    audio.volume = 0.7; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放音效失败:', error);
+    });
+}
+
+// 添加应用/移除反色滤镜效果的函数
+function applyInvertFilter(apply) {
+    // 检查是否已存在滤镜层
+    let filterOverlay = document.getElementById('world-filter-overlay');
+    
+    if (apply) {
+        // 如果不存在，创建一个全屏遮罩层
+        if (!filterOverlay) {
+            filterOverlay = document.createElement('div');
+            filterOverlay.id = 'world-filter-overlay';
+            filterOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0);
+                pointer-events: none;
+                z-index: 9999;
+                mix-blend-mode: difference;
+                transition: all 0.3s ease;
+            `;
+            document.body.appendChild(filterOverlay);
+            
+            // 添加一个闪光效果
+            setTimeout(() => {
+                filterOverlay.style.background = 'rgba(255, 255, 255, 1)';
+            }, 50);
+        } else {
+            // 如果已存在，激活它
+            filterOverlay.style.display = 'block';
+            setTimeout(() => {
+                filterOverlay.style.background = 'rgba(255, 255, 255, 1)';
+            }, 50);
+        }
+        
+        // 播放时停效果音效
+        const audio = new Audio('assets/sounds/time-stop-effect.mp3');
+        audio.volume = 0.3;
+        audio.play().catch(e => console.log('无法播放效果音效:', e));
+    } else {
+        // 移除滤镜效果
+        if (filterOverlay) {
+            // 渐变移除
+            filterOverlay.style.background = 'rgba(255, 255, 255, 0)';
+            setTimeout(() => {
+                filterOverlay.style.display = 'none';
+            }, 300);
+        }
+    }
+}
+
 export {
     skills,
     initSkillSystem,
@@ -562,5 +660,7 @@ export {
     createSkillCard3D,
     pickupSkillCard,
     checkSkillCardDrop,
-    activateSkillByName  // 导出新函数，以便其他模块可以使用
+    activateSkillByName,  // 导出新函数，以便其他模块可以使用
+    playTheWorldSound,
+    applyInvertFilter
 };

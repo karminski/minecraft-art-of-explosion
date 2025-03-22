@@ -7,6 +7,11 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
     let timeLeft = config.gameConfig.gameTime; // 60秒，以毫秒为单位
     let timerInterval = null;
     
+    // 添加时间暂停相关变量
+    let isTimerPaused = false;
+    let pauseStartTime = 0;
+    let totalPausedTime = 0;
+    
     // 升级配置
     const UPGRADE_CONFIG = {
         cost: 1000,  // 每1%升级需要的奖金点数
@@ -293,7 +298,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
     }
     
     
-    // 开始计时器
+    // 开始计时器 - 修改为支持暂停
     function startTimer() {
         // 检查是否有长者眼镜升级，增加游戏时间
         const glassesLevel = userDataSystem.getUpgradeProgress('glasses');
@@ -303,8 +308,13 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
         
         const startTime = Date.now();
         timerInterval = setInterval(() => {
-            // 基于实际流逝的时间计算
-            const elapsedTime = Date.now() - startTime;
+            // 如果计时器被暂停，不更新时间
+            if (isTimerPaused) {
+                return;
+            }
+            
+            // 基于实际流逝的时间计算，但考虑暂停的总时长
+            const elapsedTime = Date.now() - startTime - totalPausedTime;
             timeLeft = Math.max((baseTime + (glassesLevel * 1000)) - elapsedTime, 0);
             
             timerDisplay.innerHTML = formatTime(timeLeft);
@@ -316,10 +326,41 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
         }, 100);
     }
     
+    // 添加暂停/恢复计时器的方法
+    function pauseTimer(pause, skillName) {
+        const skillDuration = window.globalConfig.gameConfig.skillCardConfig[skillName].duration;
+        console.log(`pauseTimer 被调用: ${pause}, 当前状态: ${isTimerPaused}, 技能持续时间: ${skillDuration}ms`);
+        
+        if (pause && !isTimerPaused) {
+            // 暂停计时器
+            isTimerPaused = true;
+            pauseStartTime = Date.now();
+            console.log('游戏计时器已暂停 - 时间停止技能生效', pauseStartTime);
+            
+            // 设置自动恢复计时器
+            setTimeout(() => {
+                if (isTimerPaused) {
+                    // 如果仍处于暂停状态，则恢复计时器
+                    pauseTimer(false, skillName);
+                    console.log('技能持续时间结束，自动恢复计时器');
+                }
+            }, skillDuration * 1000);
+        } else if (!pause && isTimerPaused) {
+            // 恢复计时器
+            isTimerPaused = false;
+            // 计算这次暂停的时长并加到总暂停时间
+            const pauseDuration = Date.now() - pauseStartTime;
+            totalPausedTime += pauseDuration;
+            console.log('游戏计时器已恢复 - 时间停止技能结束', 
+                       '暂停持续时间:', pauseDuration, 
+                       '总暂停时间:', totalPausedTime);
+        }
+    }
+    
     // 开始计时器
     startTimer();
     
-    // 返回控制接口
+    // 返回控制接口 - 添加pauseTimer方法
     return {
         updateScore: function(points) {
             if (!gameActive) return;
@@ -365,6 +406,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
         isGameActive: function() {
             return gameActive;
         },
+        pauseTimer: pauseTimer, // 添加暂停计时器方法
         getCurrentScore: function() {
             return score;
         },

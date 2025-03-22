@@ -12,16 +12,14 @@ function getDefaultConfig() {
             gameTime: 60000, // 游戏时间，单位为毫秒
             tntDefaultExplodeRange: 3.5, // TNT爆炸范围
             tntDefaultNum: 10, // 开局TNT数量
-            llamaDefaultNum: 6, // 开局羊驼数量
-            // llamaDefaultNum: 60, // 开局羊驼数量
-            pigDefaultNum: 80, // 开局猪猪数量
-            // pigDefaultNum: 2, // 开局猪猪数量
+            llamaDefaultNum: 60, // 开局羊驼数量
+            pigDefaultNum: 90, // 开局猪猪数量
             defaultKillScore: 10, // 击杀动物得分
             defaultUserMoveSpeed: 0.05, // 默认玩家移动速度
             defaultUserJumpScale: 0.1, // 默认玩家跳跃高度
             skillCardDropProbability: 0.9, // 技能卡掉落概率
             skillCardDropList: { // 默认技能卡掉落列表
-                theWorld: 0.10,
+                theWorld: 0.1,
                 theMagnet: 0.5,
                 theNapalm: 0.2,
                 theInfinite: 0.2,
