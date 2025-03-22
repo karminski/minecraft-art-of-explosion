@@ -15,14 +15,28 @@ function getDefaultConfig() {
             llamaDefaultNum: 60, // 开局羊驼数量
             pigDefaultNum: 2, // 开局猪猪数量
             defaultKillScore: 10, // 击杀动物得分
-            itemDropProbability: 0.1, // 物品掉落概率
             defaultUserMoveSpeed: 0.05, // 默认玩家移动速度
             defaultUserJumpScale: 0.1, // 默认玩家跳跃高度
-            itemDropList: { // 默认猪猪掉落列表
-                theWorld: 0.01,
-                fusionBomb: 0.05,
-                napalm: 0.02,
-                unlimitBomb: 0.1,
+            skillCardDropProbability: 0.1, // 技能卡掉落概率
+            skillCardDropList: { // 默认技能卡掉落列表
+                theWorld: 0.10,
+                theMagnet: 0.5,
+                theNapalm: 0.2,
+                theInfinite: 0.2,
+            },
+            skillCardConfig: {
+                theWorld: {
+                    duration: 10000,
+                },
+                theMagnet: {
+                    duration: 5000,
+                },
+                theNapalm: {
+                    duration: 5000,
+                },
+                theInfinite: {
+                    duration: 5000,
+                },
             }
         }
     };
