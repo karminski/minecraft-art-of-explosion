@@ -312,30 +312,12 @@ class LlamaAnimal extends AnimalBase {
             for (let i = 0; i < batchSize; i++) {
                 const llama = new LlamaAnimal(scene, textureLoader);
                 
-                // 在世界边缘生成新羊驼，而不是中心区域
-                const edgeOffset = 5;
-                // 随机选择一个边缘位置
-                let x, z;
-                const side = Math.floor(Math.random() * 4); // 0-3表示四个边
+                // 在整个世界范围内随机生成羊驼，而不是只在边缘
+                const safeMargin = 5; // 保留边界安全距离
                 
-                switch (side) {
-                    case 0: // 北边
-                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        z = edgeOffset;
-                        break;
-                    case 1: // 东边
-                        x = worldSize - edgeOffset - 1;
-                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        break;
-                    case 2: // 南边
-                        x = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        z = worldSize - edgeOffset - 1;
-                        break;
-                    case 3: // 西边
-                        x = edgeOffset;
-                        z = Math.floor(Math.random() * (worldSize - 2 * edgeOffset)) + edgeOffset;
-                        break;
-                }
+                // 在安全范围内随机生成坐标
+                const x = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
+                const z = safeMargin + Math.floor(Math.random() * (worldSize - 2 * safeMargin));
                 
                 // 确定安全的生成高度
                 const spawnY = LlamaAnimal.findSpawnHeight(world, x, z, worldSize, blockTypes);

@@ -17,7 +17,7 @@ function getDefaultConfig() {
             defaultKillScore: 10, // 击杀动物得分
             defaultUserMoveSpeed: 0.05, // 默认玩家移动速度
             defaultUserJumpScale: 0.1, // 默认玩家跳跃高度
-            skillCardDropProbability: 0.1, // 技能卡掉落概率
+            skillCardDropProbability: 0.4, // 技能卡掉落概率
             skillCardDropList: { // 默认技能卡掉落列表
                 theWorld: 0.1,
                 theMagnet: 0.5,
