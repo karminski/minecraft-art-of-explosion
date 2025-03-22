@@ -133,7 +133,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">军火商</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, TNT 初始数量 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="armsDealer" style="width: ${latestUpgrades.armsDealer}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="armsDealer" style="width: ${(latestUpgrades.armsDealer / UPGRADE_CONFIG.armsDealer.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.armsDealer}</span>
@@ -148,7 +148,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">核爆</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, TNT 爆炸范围 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="nuclearBomb" style="width: ${latestUpgrades.nuclearBomb}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="nuclearBomb" style="width: ${(latestUpgrades.nuclearBomb / UPGRADE_CONFIG.nuclearBomb.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.nuclearBomb}</span>
@@ -163,7 +163,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">羊驼奶</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 羊驼的生成最大数量 + 10</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="llamaMilk" style="width: ${latestUpgrades.llamaMilk}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="llamaMilk" style="width: ${(latestUpgrades.llamaMilk / UPGRADE_CONFIG.llamaMilk.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.llamaMilk}</span>
@@ -178,7 +178,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">猪饲料</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 猪猪的生成最大数量 + 1</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="pigFeed" style="width: ${latestUpgrades.pigFeed}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="pigFeed" style="width: ${(latestUpgrades.pigFeed / UPGRADE_CONFIG.pigFeed.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.pigFeed}</span>
@@ -196,7 +196,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">长者的眼镜</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 每局游戏最大时长 + 1s</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="glasses" style="width: ${latestUpgrades.glasses}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="glasses" style="width: ${(latestUpgrades.glasses / UPGRADE_CONFIG.glasses.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.glasses}</span>
@@ -211,7 +211,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">奇怪的收购者</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 消灭一只动物的得分增加10%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="acquirer" style="width: ${latestUpgrades.acquirer}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="acquirer" style="width: ${(latestUpgrades.acquirer / UPGRADE_CONFIG.acquirer.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.acquirer}</span>
@@ -226,7 +226,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">幸运星</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 猪猪的道具掉落概率增加 2%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="clover" style="width: ${latestUpgrades.clover}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="clover" style="width: ${(latestUpgrades.clover / UPGRADE_CONFIG.clover.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.clover}</span>
@@ -241,7 +241,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         <div class="upgrade-title" style="font-size: 18px; margin-bottom: 5px;">肌肉狂</div>
                         <div class="upgrade-desc" style="font-size: 14px; color: #aaa; margin-bottom: 10px; height: 40px;">每增加一点, 人物的移动速度和跳跃高度增加 1%</div>
                         <div class="progress-container" style="width: 100%; height: 15px; background-color: #222; border-radius: 7px; overflow: hidden;">
-                            <div class="progress-bar" data-type="muscle" style="width: ${latestUpgrades.muscle}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
+                            <div class="progress-bar" data-type="muscle" style="width: ${(latestUpgrades.muscle / UPGRADE_CONFIG.muscle.maxLevel) * 100}%; height: 100%; background-color: #ff5722; transition: width 0.3s;"></div>
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.muscle}</span>
