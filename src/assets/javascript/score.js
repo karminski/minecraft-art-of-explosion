@@ -14,8 +14,38 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
     
     // 升级配置
     const UPGRADE_CONFIG = {
-        cost: 1000,  // 每1%升级需要的奖金点数
-        maxLevel: 100 // 最大升级等级
+        armsDealer: {
+            cost: 500,  // 每1%升级需要的奖金点数
+            maxLevel: 100 // 最大升级等级
+        },
+        nuclearBomb: {
+            cost: 1000,  // 每1%升级需要的奖金点数
+            maxLevel: 20 // 最大升级等级
+        },
+        llamaMilk: {
+            cost: 1000,  // 每1%升级需要的奖金点数
+            maxLevel: 20 // 最大升级等级
+        },
+        pigFeed: {
+            cost: 1000,  // 每1%升级需要的奖金点数
+            maxLevel: 20 // 最大升级等级
+        },
+        glasses: {
+            cost: 200,  // 每1%升级需要的奖金点数
+            maxLevel: 100 // 最大升级等级
+        },
+        acquirer: {
+            cost: 500,  // 每1%升级需要的奖金点数
+            maxLevel: 100 // 最大升级等级
+        },
+        clover: {
+            cost: 1000,  // 每1%升级需要的奖金点数
+            maxLevel: 50 // 最大升级等级
+        },
+        muscle: {
+            cost: 1500,  // 每1%升级需要的奖金点数
+            maxLevel: 20 // 最大升级等级
+        }
     };
     
     // 初始化用户数据系统
@@ -93,7 +123,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
             
             <!-- 升级系统区域 -->
             <div id="upgrade-system" style="margin-bottom: 30px; width: 100%;">
-                <div style="font-size: 24px; margin-bottom: 15px; color: #4CAF50;">可升级项目 (1000奖金 = 1%升级)</div>
+                <div style="font-size: 24px; margin-bottom: 15px; color: #4CAF50;">可升级项目</div>
                 
                 <!-- 第一行升级项 -->
                 <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
@@ -107,9 +137,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.armsDealer}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.armsDealer.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="armsDealer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="armsDealer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.armsDealer.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.armsDealer.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.armsDealer.cost && latestUpgrades.armsDealer < UPGRADE_CONFIG.armsDealer.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.armsDealer.cost})</button>
                     </div>
                     
                     <!-- 核爆 -->
@@ -122,9 +152,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.nuclearBomb}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.nuclearBomb.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="nuclearBomb" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="nuclearBomb" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.nuclearBomb.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.nuclearBomb.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.nuclearBomb.cost && latestUpgrades.nuclearBomb < UPGRADE_CONFIG.nuclearBomb.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.nuclearBomb.cost})</button>
                     </div>
                     
                     <!-- 羊驼奶 -->
@@ -137,9 +167,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.llamaMilk}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.llamaMilk.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="llamaMilk" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="llamaMilk" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.llamaMilk.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.llamaMilk.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.llamaMilk.cost && latestUpgrades.llamaMilk < UPGRADE_CONFIG.llamaMilk.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.llamaMilk.cost})</button>
                     </div>
                     
                     <!-- 猪饲料 -->
@@ -152,9 +182,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.pigFeed}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.pigFeed.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="pigFeed" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="pigFeed" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.pigFeed.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.pigFeed.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.pigFeed.cost && latestUpgrades.pigFeed < UPGRADE_CONFIG.pigFeed.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.pigFeed.cost})</button>
                     </div>
                 </div>
                 
@@ -170,9 +200,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.glasses}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.glasses.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="glasses" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.glasses < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.glasses < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="glasses" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.glasses.cost && latestUpgrades.glasses < UPGRADE_CONFIG.glasses.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.glasses.cost && latestUpgrades.glasses < UPGRADE_CONFIG.glasses.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.glasses.cost})</button>
                     </div>
                     
                     <!-- 奇怪的收购者 -->
@@ -185,9 +215,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.acquirer}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.acquirer.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="acquirer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="acquirer" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.acquirer.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.acquirer.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.acquirer.cost && latestUpgrades.acquirer < UPGRADE_CONFIG.acquirer.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.acquirer.cost})</button>
                     </div>
                     
                     <!-- 幸运星 -->
@@ -200,9 +230,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.clover}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.clover.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="clover" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.clover < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.clover < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="clover" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.clover.cost && latestUpgrades.clover < UPGRADE_CONFIG.clover.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.clover.cost && latestUpgrades.clover < UPGRADE_CONFIG.clover.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.clover.cost})</button>
                     </div>
                     
                     <!-- 肌肉狂 -->
@@ -215,9 +245,9 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
                         </div>
                         <div class="progress-text" style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;">
                             <span>${latestUpgrades.muscle}</span>
-                            <span>${UPGRADE_CONFIG.maxLevel}</span>
+                            <span>${UPGRADE_CONFIG.muscle.maxLevel}</span>
                         </div>
-                        <button class="upgrade-button" data-type="muscle" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.muscle < UPGRADE_CONFIG.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.cost && latestUpgrades.muscle < UPGRADE_CONFIG.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (1000)</button>
+                        <button class="upgrade-button" data-type="muscle" style="width: 100%; padding: 8px; margin-top: 10px; background-color: ${latestBonusPoints >= UPGRADE_CONFIG.muscle.cost && latestUpgrades.muscle < UPGRADE_CONFIG.muscle.maxLevel ? '#4CAF50' : '#666'}; color: white; border: none; border-radius: 5px; cursor: ${latestBonusPoints >= UPGRADE_CONFIG.muscle.cost && latestUpgrades.muscle < UPGRADE_CONFIG.muscle.maxLevel ? 'pointer' : 'not-allowed'}; transition: background-color 0.3s;">升级 (${UPGRADE_CONFIG.muscle.cost})</button>
                     </div>
                 </div>
             </div>
@@ -242,10 +272,13 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
         const currentProgress = userDataSystem.getUpgradeProgress(upgradeType);
         const currentBonus = userDataSystem.getBonusPoints();
         
-        // 检查是否可以升级
-        if (currentBonus >= UPGRADE_CONFIG.cost && currentProgress < UPGRADE_CONFIG.maxLevel) {
-            // 扣除奖金
-            const newBonus = userDataSystem.deductBonusPoints(UPGRADE_CONFIG.cost);
+        // 检查是否可以升级 - 使用动态配置值
+        const upgradeCost = UPGRADE_CONFIG[upgradeType].cost;
+        const maxLevel = UPGRADE_CONFIG[upgradeType].maxLevel;
+        
+        if (currentBonus >= upgradeCost && currentProgress < maxLevel) {
+            // 扣除奖金 - 使用动态配置值
+            const newBonus = userDataSystem.deductBonusPoints(upgradeCost);
             
             // 增加升级进度
             userDataSystem.increaseUpgradeProgress(upgradeType, 1);

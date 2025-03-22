@@ -258,7 +258,7 @@ function tearDownAdvancedMouseControls(document, listeners) {
 // 设置物品快捷栏选择
 function setupInventorySelection(inventory, character, blockTypes, textures, materials, document) {
     document.addEventListener('keydown', (event) => {
-        if (event.key >= '1' && event.key <= '8') {
+        if (event.key >= '1' && event.key <= '8' && !event.ctrlKey) {
             const index = parseInt(event.key) - 1;
             if (index >= 0 && index < inventory.items.length) {
                 inventory.selectedIndex = index;
