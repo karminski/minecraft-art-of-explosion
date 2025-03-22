@@ -319,6 +319,11 @@ function placeBlock(scene, world, blockReferences, camera, inventory, blockTypes
                 player.position.y += 1.0; // 抬高一个方块的高度
             }
 
+            // 如果放置的是TNT，则播放声音
+            if (blockTypeToPlace === blockTypes.tnt) {
+                playTNTPlaceSound();
+            }
+
             // 更新 UI
             updateInventoryUI(character, blockTypes, textures, materials);
         }
@@ -520,10 +525,6 @@ function startTNTTimer(block, scene, blockReferences) {
         });
         document.dispatchEvent(tntEvent);
         
-        // 作为备份方案，仍然尝试调用全局函数
-        if (window.handleTNTExplosion) {
-            window.handleTNTExplosion(x, y, z);
-        }
     }, 3000);
 
     // 存储定时器引用以便清理
@@ -652,6 +653,9 @@ function explodeTNT(
 ) {
     // 设置爆炸球体的最大半径
     const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
+
+    // 播放TNT爆炸音效
+    playTNTExplodeSound();
 
     // 爆炸之前将其移除
     world[x][y][z] = blockTypes.air;
@@ -926,6 +930,26 @@ function explodeTNT(
         }
     }
 }
+
+// 播放TNT放置音效
+function playTNTPlaceSound() {
+    const audio = new Audio('assets/sounds/tnt-place.mp3');
+    audio.volume = 0.5; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放TNT放置音效失败:', error);
+    });
+}
+
+// 播放TNT爆炸音效
+function playTNTExplodeSound() {
+    const audio = new Audio('assets/sounds/tnt-explode.mp3');
+    console.log("播放TNT爆炸音效:", audio);
+    audio.volume = 0.5; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放TNT爆炸音效失败:', error);
+    });
+}
+
 
 // 导出所有模块
 export {
