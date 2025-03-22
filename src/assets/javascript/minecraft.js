@@ -467,6 +467,7 @@ export function createMinefract() {
         userDataSystem: userDataSystem,
         skillSystem: skillSystem,
         checkSkillCardDrop: checkSkillCardDrop,
+        createSkillCard3D: createSkillCard3D,
     }
 }
 
@@ -499,7 +500,8 @@ document.addEventListener('tnt-explosion', (event) => {
         window.MinecraftArtOfExplode.character,
         window.MinecraftArtOfExplode.textures,
         window.MinecraftArtOfExplode.scoreSystem,
-        window.MinecraftArtOfExplode.checkSkillCardDrop
+        window.MinecraftArtOfExplode.checkSkillCardDrop,
+        window.MinecraftArtOfExplode.createSkillCard3D
     );
 });
 
@@ -524,7 +526,8 @@ window.handleTNTExplosion = function(x, y, z) {
         window.MinecraftArtOfExplode.character,
         window.MinecraftArtOfExplode.textures,
         window.MinecraftArtOfExplode.scoreSystem,
-        window.MinecraftArtOfExplode.checkSkillCardDrop
+        window.MinecraftArtOfExplode.checkSkillCardDrop,
+        window.MinecraftArtOfExplode.createSkillCard3D
     );
 };
 

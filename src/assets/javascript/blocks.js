@@ -531,7 +531,26 @@ function startTNTTimer(block, scene, blockReferences) {
 }
 
 // TNT爆炸效果，添加计分系统参数
-function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem, checkSkillCardDrop) {
+function explodeTNT(
+    config, 
+    scene, 
+    x, y, z, 
+    world, 
+    blockReferences, 
+    worldSize, 
+    blockTypes, 
+    explosionTextures, 
+    materials, 
+    explosionDebris, 
+    animals, 
+    inventory, 
+    updateInventoryUI, 
+    character, 
+    textures, 
+    scoreSystem, 
+    checkSkillCardDrop, 
+    createSkillCard3D
+) {
     // 设置爆炸球体的最大半径
     const explosionRadius = config.gameConfig.tntDefaultExplodeRange; 
 
@@ -606,24 +625,17 @@ function explodeTNT(config, scene, x, y, z, world, blockReferences, worldSize, b
                                 updateInventoryUI(character, blockTypes, textures, materials);
                             }
                         }
-                    }
 
-                    // 处理技能卡掉落, 只有猪猪会掉落技能卡
-                    console.log("animalType:", animalType);
-                    if (animalType === 'pigs') {
-                        const droppedSkill = checkSkillCardDrop(config);
-                        if (droppedSkill) {
-                            console.log(`猪掉落了技能卡: ${droppedSkill}`);
-
-                            // 导入createSkillCard3D函数
-                            import('./skills.js').then(({ createSkillCard3D }) => {
-                                // 在猪的位置创建技能卡
+                        // 处理技能卡掉落, 只有猪猪会掉落技能卡
+                        console.log("animal.animalType:", animal.animalType);
+                        if (animal.animalType === 'pig') {
+                            const droppedSkill = checkSkillCardDrop(config);
+                            if (droppedSkill) {
                                 createSkillCard3D(scene, animal.position.clone(), droppedSkill);
-                            }).catch(err => {
-                                console.error("导入skills.js失败:", err);
-                            });
+                            }
                         }
                     }
+
                 });
                 
                 // 从动物列表中移除被炸掉的动物

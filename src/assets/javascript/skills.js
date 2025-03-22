@@ -1,10 +1,10 @@
 // 技能系统 - 管理游戏中可用的技能
 const skills = {
     items: [
-        { name: 'theWorld', texture: 'assets/images/the-world.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
-        { name: 'theMagnet', texture: 'assets/images/the-magnet.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
-        { name: 'theNapalm', texture: 'assets/images/the-napalm.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
-        { name: 'theInfinite', texture: 'assets/images/the-infinite.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 }
+        { name: 'theWorld', texture: 'assets/images/the-world.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
+        { name: 'theMagnet', texture: 'assets/images/the-magnet.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
+        { name: 'theNapalm', texture: 'assets/images/the-napalm.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
+        { name: 'theInfinite', texture: 'assets/images/the-infinite.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 }
     ],
     activeSkillIndex: -1 // -1 表示当前没有激活的技能
 };
@@ -484,7 +484,6 @@ function playPickupSound() {
 
 // 检查是否可以掉落技能卡
 function checkSkillCardDrop(config) {
-    return 'theWorld';
     // 检查是否掉落卡牌
     if (Math.random() < config.gameConfig.skillCardDropProbability) {
         // 确定掉落哪种卡牌
