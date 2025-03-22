@@ -122,8 +122,9 @@ function updateHeldItem(character, blockTypes, textures, materials) {
     // 获取当前选中的物品
     const selectedItem = inventory.items[inventory.selectedIndex];
 
-    // 如果物品数量为0或者是道具1（矿镐）则不创建手持物品
-    if (selectedItem.count <= 0 && inventory.selectedIndex !== 0) {
+    // 修改这一行，使无限模式下忽略数量为0的检查
+    // 原代码：if (selectedItem.count <= 0 && inventory.selectedIndex !== 0) {
+    if (selectedItem.count <= 0 && inventory.selectedIndex !== 0 && !inventory.infiniteMode) {
         return;
     }
 

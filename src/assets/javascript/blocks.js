@@ -280,44 +280,47 @@ function placeBlock(scene, world, blockReferences, camera, inventory, blockTypes
                 (x === playerBlockX && y === playerBlockY - 1 && z === playerBlockZ);
 
             // 只能放置方块，不能放置道具1（矿镐）
-            if (inventory.selectedIndex !== 0 && inventory.items[inventory.selectedIndex].count > 0) {
-                // 根据当前选择的物品确定方块类型
-                let blockTypeToPlace;
-                switch (inventory.selectedIndex) {
-                    case 2: // 泥土
-                        blockTypeToPlace = blockTypes.dirt;
-                        break;
-                    case 3: // 石头
-                        blockTypeToPlace = blockTypes.stone;
-                        break;
-                    case 4: // 木头
-                        blockTypeToPlace = blockTypes.tree;
-                        break;
-                    case 5: // 树叶
-                        blockTypeToPlace = blockTypes.leaves;
-                        break;
-                    case 1: // TNT
-                        blockTypeToPlace = blockTypes.tnt;
-                        break;
-                    default:
-                        blockTypeToPlace = blockTypes.stone; // 默认为石头
-                }
-
-                world[x][y][z] = blockTypeToPlace;
-                createBlock(scene, x, y, z, blockTypeToPlace, materials, textures, blockReferences, inventory);
-
-                // 如果方块与玩家位置冲突，将玩家抬高
-                if (willCollideWithPlayer) {
-                    console.log("检测到方块与玩家位置冲突，自动抬高玩家");
-                    player.position.y += 1.0; // 抬高一个方块的高度
-                }
-
-                // 减少物品数量并确保不会低于0
-                inventory.items[inventory.selectedIndex].count = Math.max(0, inventory.items[inventory.selectedIndex].count - 1);
-
-                // 立即更新UI
-                updateInventoryUI(character, blockTypes, textures, materials);
+            const itemIndex = inventory.selectedIndex;
+            if (itemIndex === 0) return; // 跳过矿镐
+            
+            // 使用 window.MinecraftArtOfExplode.changeItemCount 来检查和减少物品数量
+            if (!window.MinecraftArtOfExplode.changeItemCount(itemIndex, -1)) {
+                return; // 如果不能放置，直接返回
             }
+
+            // 根据当前选择的物品确定方块类型
+            let blockTypeToPlace;
+            switch (inventory.selectedIndex) {
+                case 2: // 泥土
+                    blockTypeToPlace = blockTypes.dirt;
+                    break;
+                case 3: // 石头
+                    blockTypeToPlace = blockTypes.stone;
+                    break;
+                case 4: // 木头
+                    blockTypeToPlace = blockTypes.tree;
+                    break;
+                case 5: // 树叶
+                    blockTypeToPlace = blockTypes.leaves;
+                    break;
+                case 1: // TNT
+                    blockTypeToPlace = blockTypes.tnt;
+                    break;
+                default:
+                    blockTypeToPlace = blockTypes.stone; // 默认为石头
+            }
+
+            world[x][y][z] = blockTypeToPlace;
+            createBlock(scene, x, y, z, blockTypeToPlace, materials, textures, blockReferences, inventory);
+
+            // 如果方块与玩家位置冲突，将玩家抬高
+            if (willCollideWithPlayer) {
+                console.log("检测到方块与玩家位置冲突，自动抬高玩家");
+                player.position.y += 1.0; // 抬高一个方块的高度
+            }
+
+            // 更新 UI
+            updateInventoryUI(character, blockTypes, textures, materials);
         }
     }
 }
