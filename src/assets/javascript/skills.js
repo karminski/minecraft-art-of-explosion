@@ -1,10 +1,10 @@
 // 技能系统 - 管理游戏中可用的技能
 const skills = {
     items: [
-        { name: 'theWorld', texture: 'assets/images/the-world.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
-        { name: 'theMagnet', texture: 'assets/images/the-magnet.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
-        { name: 'theNapalm', texture: 'assets/images/the-napalm.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 },
-        { name: 'theInfinite', texture: 'assets/images/the-infinite.png', active: false, cooldown: 0, maxCooldown: 0.1, count: 0 }
+        { name: 'theWorld', texture: 'assets/images/the-world.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
+        { name: 'theMagnet', texture: 'assets/images/the-magnet.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
+        { name: 'theNapalm', texture: 'assets/images/the-napalm.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 },
+        { name: 'theInfinite', texture: 'assets/images/the-infinite.png', active: false, cooldown: 0, maxCooldown: 10, count: 0 }
     ],
     activeSkillIndex: -1 // -1 表示当前没有激活的技能
 };
@@ -210,6 +210,7 @@ function deactivateSkill(index) {
 
 // 开始技能计时器
 function startSkillTimer(index) {
+    const countDownTime = window.globalConfig.gameConfig.skillCardConfig[skills.items[index].name].duration;
     const skillCard = document.querySelector(`.skill-card[data-skill-index="${index}"]`);
     const timerElement = skillCard.querySelector('.skill-timer');
     const imageElement = skillCard.querySelector('img');
@@ -222,7 +223,7 @@ function startSkillTimer(index) {
     
     // 显示倒计时
     timerElement.style.opacity = '1';
-    timerElement.textContent = skills.items[index].maxCooldown;
+    timerElement.textContent = countDownTime;
     
     // 清除之前的计时器（如果存在）
     if (skillTimers[index]) {
@@ -230,7 +231,7 @@ function startSkillTimer(index) {
     }
     
     // 设置倒计时
-    let timeLeft = skills.items[index].maxCooldown;
+    let timeLeft = countDownTime;
     skillTimers[index] = setInterval(() => {
         timeLeft--;
         timerElement.textContent = timeLeft;
@@ -323,9 +324,49 @@ function updateSkillUI(index) {
     }
 }
 
+// 设置技能快捷键
+function setupSkillShortcuts() {
+    document.addEventListener('keydown', (event) => {
+        // 检查是否按下了Ctrl键
+        if (event.ctrlKey) {
+            // 根据数字键激活对应技能
+            if (event.key === '1') {
+                // 激活第一个技能 theWorld
+                activateSkillByName('theWorld');
+                event.preventDefault(); // 防止浏览器默认行为
+            } else if (event.key === '2') {
+                // 激活第二个技能 theMagnet
+                activateSkillByName('theMagnet');
+                event.preventDefault();
+            } else if (event.key === '3') {
+                // 激活第三个技能 theNapalm
+                activateSkillByName('theNapalm');
+                event.preventDefault();
+            } else if (event.key === '4') {
+                // 激活第四个技能 theInfinite
+                activateSkillByName('theInfinite');
+                event.preventDefault();
+            }
+        }
+    });
+    
+    console.log("技能快捷键已设置 (Ctrl+1/2/3/4)");
+}
+
+// 通过技能名称激活技能
+function activateSkillByName(skillName) {
+    const skillIndex = skills.items.findIndex(item => item.name === skillName);
+    if (skillIndex !== -1) {
+        activateSkill(skillIndex);
+    } else {
+        console.warn(`未找到技能: ${skillName}`);
+    }
+}
+
 // 初始化技能系统
 function initSkillSystem() {
     createSkillsUI();
+    setupSkillShortcuts(); // 设置快捷键
     console.log("技能系统已初始化");
     
     return {
@@ -520,5 +561,6 @@ export {
     deactivateSkill,
     createSkillCard3D,
     pickupSkillCard,
-    checkSkillCardDrop
+    checkSkillCardDrop,
+    activateSkillByName  // 导出新函数，以便其他模块可以使用
 };

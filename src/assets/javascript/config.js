@@ -28,16 +28,16 @@ function getDefaultConfig() {
             },
             skillCardConfig: {
                 theWorld: {
-                    duration: 10000,
+                    duration: 10, // in seconds
                 },
                 theMagnet: {
-                    duration: 5000,
+                    duration: 5,
                 },
                 theNapalm: {
-                    duration: 5000,
+                    duration: 5,
                 },
                 theInfinite: {
-                    duration: 5000,
+                    duration: 5,
                 },
             }
         }

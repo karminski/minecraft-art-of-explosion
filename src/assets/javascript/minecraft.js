@@ -113,6 +113,7 @@ export function createMinefract() {
 
     // 获取系统配置
     const config = getConfig(userDataSystem);
+    window.globalConfig = config;
 
     // 初始化场景、相机和渲染器
     const scene = new THREE.Scene();
