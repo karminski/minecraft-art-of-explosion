@@ -93,6 +93,12 @@ import {
     getConfig
 } from './config.js';
 
+// 添加导入skills.js中的函数
+import {
+    initSkillSystem
+} from './skills.js';
+
+
 // 导出游戏实例，以便其他模块可以访问
 export function createMinefract() {
 
@@ -248,6 +254,8 @@ export function createMinefract() {
         keyboardControlsListeners
     );
 
+    // 初始化技能系统
+    const skillSystem = initSkillSystem();
 
     // 在animate函数内，修改动物更新处理
     function animate(currentTime) {
