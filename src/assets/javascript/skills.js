@@ -684,7 +684,7 @@ function applyInvertFilter(apply) {
 
 // 添加播放磁铁音效的函数
 function playMagnetSound() {
-    const audio = new Audio('assets/sounds/magnet.mp3');
+    const audio = new Audio('assets/sounds/the-magnet.mp3');
     audio.volume = 0.5; // 设置合适的音量
     audio.play().catch(error => {
         console.error('播放磁铁音效失败:', error);
@@ -704,7 +704,7 @@ function applyMagnetEffect(active) {
 
 // 播放无限技能音效
 function playInfiniteSound() {
-    const audio = new Audio('assets/sounds/infinite.mp3');
+    const audio = new Audio('assets/sounds/the-infinite.mp3');
     audio.volume = 0.5; // 设置合适的音量
     audio.play().catch(error => {
         console.error('播放无限技能音效失败:', error);
@@ -763,7 +763,7 @@ function applyInfiniteItemEffect(active) {
 
 // 播放 Napalm 技能音效
 function playNapalmSound() {
-    const audio = new Audio('assets/sounds/napalm.mp3');
+    const audio = new Audio('assets/sounds/the-napalm.mp3');
     audio.volume = 0.5; // 设置合适的音量
     audio.play().catch(error => {
         console.error('播放 Napalm 音效失败:', error);
