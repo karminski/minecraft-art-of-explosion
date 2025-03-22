@@ -59,7 +59,7 @@ function createSkillCard(skill, index, container) {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        filter: grayscale(100%); /* 默认黑白 */
+        filter: ${skill.count > 0 ? 'grayscale(0)' : 'grayscale(100%)'}; /* 根据技能可用次数决定是否显示彩色 */
         transition: filter 0.3s ease;
     `;
 
@@ -73,6 +73,7 @@ function createSkillCard(skill, index, container) {
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.3);
+        opacity: ${skill.count > 0 ? '0.2' : '1'}; /* 根据技能可用次数调整遮罩透明度 */
         transition: opacity 0.3s ease;
     `;
 
@@ -295,19 +296,26 @@ function updateSkillUI(index) {
     
     // 更新激活状态
     if (skill.active) {
+        // 技能激活：彩色 + 金色发光
         imageElement.style.filter = 'grayscale(0)';
         overlayElement.style.opacity = '0';
         skillCard.style.boxShadow = '0 0 15px 5px gold';
         timerElement.style.opacity = '1';
     } else if (skill.cooldown > 0) {
-        // 冷却中
+        // 冷却中：黑白效果
         imageElement.style.filter = 'grayscale(100%)';
         overlayElement.style.opacity = '1';
         skillCard.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
         timerElement.style.opacity = '1';
         timerElement.textContent = skill.cooldown;
+    } else if (skill.count > 0) {
+        // 有可用次数且未激活：彩色，无特殊效果
+        imageElement.style.filter = 'grayscale(0)';
+        overlayElement.style.opacity = '0.2'; // 轻微遮罩以区分激活状态
+        skillCard.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        timerElement.style.opacity = '0';
     } else {
-        // 未激活且不在冷却
+        // 无可用次数：黑白效果
         imageElement.style.filter = 'grayscale(100%)';
         overlayElement.style.opacity = '1';
         skillCard.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
