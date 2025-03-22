@@ -28,9 +28,12 @@
 
 ## todolist
 
-道具实装
-升级数值均衡优化
-增加音乐
+- 道具实装
+- 升级数值均衡优化
+- 增加音乐和音效
+  - the-magnet
+  - the-infinite
+
 
 ## buglost
 

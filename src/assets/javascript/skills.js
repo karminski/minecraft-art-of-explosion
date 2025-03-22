@@ -206,6 +206,12 @@ function activateSkill(index) {
         
         // 启用磁力效果
         applyMagnetEffect(true);
+    } else if (skills.items[index].name === 'theInfinite') {
+        // 播放无限技能音效
+        playInfiniteSound();
+        
+        // 启用无限物品效果
+        applyInfiniteItemEffect(true);
     }
 }
 
@@ -253,6 +259,9 @@ function deactivateSkill(index) {
     } else if (skills.items[index].name === 'theMagnet') {
         // 禁用磁力效果
         applyMagnetEffect(false);
+    } else if (skills.items[index].name === 'theInfinite') {
+        // 禁用无限物品效果
+        applyInfiniteItemEffect(false);
     }
 }
 
@@ -684,6 +693,65 @@ function applyMagnetEffect(active) {
     console.log(`磁力效果 ${active ? '启用' : '禁用'}`);
 }
 
+// 播放无限技能音效
+function playInfiniteSound() {
+    const audio = new Audio('assets/sounds/infinite.mp3');
+    audio.volume = 0.5; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放无限技能音效失败:', error);
+    });
+}
+
+// 添加应用无限物品效果的函数
+function applyInfiniteItemEffect(active) {
+    // 通过自定义事件通知系统启用/禁用无限物品效果
+    const event = new CustomEvent('infinite-items', { 
+        detail: { active: active } 
+    });
+    document.dispatchEvent(event);
+    
+    console.log(`无限物品效果 ${active ? '启用' : '禁用'}`);
+    
+    // 添加视觉效果 - 闪光效果
+    if (active) {
+        // 添加闪光效果
+        let infiniteOverlay = document.getElementById('infinite-overlay');
+        if (!infiniteOverlay) {
+            infiniteOverlay = document.createElement('div');
+            infiniteOverlay.id = 'infinite-overlay';
+            infiniteOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(0,0,0,0) 70%);
+                pointer-events: none;
+                z-index: 999;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+            `;
+            document.body.appendChild(infiniteOverlay);
+            
+            // 渐显闪光效果
+            setTimeout(() => {
+                infiniteOverlay.style.opacity = '1';
+            }, 50);
+        }
+    } else {
+        // 移除闪光效果
+        const infiniteOverlay = document.getElementById('infinite-overlay');
+        if (infiniteOverlay) {
+            infiniteOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (infiniteOverlay.parentNode) {
+                    infiniteOverlay.parentNode.removeChild(infiniteOverlay);
+                }
+            }, 500);
+        }
+    }
+}
+
 export {
     skills,
     initSkillSystem,
@@ -696,5 +764,7 @@ export {
     playTheWorldSound,
     applyInvertFilter,
     playMagnetSound,
-    applyMagnetEffect
+    applyMagnetEffect,
+    playInfiniteSound,
+    applyInfiniteItemEffect
 };

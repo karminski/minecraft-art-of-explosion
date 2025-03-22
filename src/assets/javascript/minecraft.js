@@ -3,7 +3,8 @@ import {
     heldItemMesh, 
     createInventoryUI, 
     updateInventoryUI, 
-    updateHeldItem 
+    updateHeldItem,
+    changeItemCount
 } from './inventory.js';
 
 import { 
@@ -469,6 +470,7 @@ export function createMinefract() {
         skillSystem: skillSystem,
         checkSkillCardDrop: checkSkillCardDrop,
         createSkillCard3D: createSkillCard3D,
+        changeItemCount: changeItemCount
     }
 }
 

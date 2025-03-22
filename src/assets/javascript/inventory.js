@@ -10,7 +10,8 @@ const inventory = {
         { name: 'empty', texture: '', count: 0 },
         { name: 'empty', texture: '', count: 0 }
     ],
-    selectedIndex: 0
+    selectedIndex: 0,
+    infiniteMode: false // 添加无限模式标志
 };
 
 // 添加这个全局变量用于存储手持物品引用
@@ -77,10 +78,19 @@ function updateInventoryUI(character, blockTypes, textures, materials) {
 
         // 添加新的计数显示
         const count = inventory.items[index].count;
-        if (count > 0) {
+        if (count > 0 || (inventory.infiniteMode && inventory.items[index].name !== 'empty')) {
             const countElement = document.createElement('div');
             countElement.className = 'item-count';
-            countElement.textContent = `x${count}`;
+            
+            // 在无限模式下，显示∞符号而不是数量
+            if (inventory.infiniteMode && inventory.items[index].name !== 'empty') {
+                countElement.textContent = '∞';
+                countElement.style.fontSize = '24px'; // 增大∞符号的显示
+                countElement.style.color = '#ffd700'; // 金色，增强视觉效果
+            } else {
+                countElement.textContent = `x${count}`;
+            }
+            
             slot.appendChild(countElement);
         }
     });
@@ -172,12 +182,42 @@ function updateHeldItem(character, blockTypes, textures, materials) {
     }
 }
 
+// 增加一个函数来修改物品数量
+function changeItemCount(itemIndex, amount) {
+    // 如果在无限模式下，不减少物品
+    if (inventory.infiniteMode && amount < 0) {
+        return true; // 返回成功，但实际上不扣除
+    }
+    
+    // 常规模式下检查和更新数量
+    const newCount = inventory.items[itemIndex].count + amount;
+    if (newCount < 0) {
+        return false; // 数量不足
+    }
+    
+    inventory.items[itemIndex].count = newCount;
+    return true;
+}
 
+// 添加事件监听器，处理无限模式切换
+document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('infinite-items', (event) => {
+        inventory.infiniteMode = event.detail.active;
+        console.log(`道具栏无限模式: ${inventory.infiniteMode ? '开启' : '关闭'}`);
+        
+        // 更新UI显示
+        updateInventoryUI(window.MinecraftArtOfExplode.character, 
+                         window.MinecraftArtOfExplode.blockTypes, 
+                         window.MinecraftArtOfExplode.textures, 
+                         window.MinecraftArtOfExplode.materials);
+    });
+});
 
 export {
     inventory,
     heldItemMesh,
     createInventoryUI,
     updateInventoryUI,
-    updateHeldItem
+    updateHeldItem,
+    changeItemCount
 };
