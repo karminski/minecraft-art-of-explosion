@@ -186,6 +186,42 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null, bloc
             });
         });
     }
+    
+    // 解决动物之间的重叠
+    if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.resolveOverlap) {
+        // 解决动物与方块的重叠
+        Object.keys(animals).forEach(animalType => {
+            animals[animalType].forEach(animal => {
+                // 解决与方块的重叠
+                if (window.MinecraftArtOfExplode.resolveBlockOverlap) {
+                    const blockPush = window.MinecraftArtOfExplode.resolveBlockOverlap(animal, world, worldSize, blockTypes);
+                    if (blockPush.x !== 0 || blockPush.z !== 0) {
+                        animal.position.x += blockPush.x;
+                        animal.position.z += blockPush.z;
+                    }
+                }
+            });
+        });
+        
+        // 解决动物之间的重叠
+        Object.keys(animals).forEach(type1 => {
+            animals[type1].forEach(animal1 => {
+                // 检查与其他动物的重叠
+                Object.keys(animals).forEach(type2 => {
+                    animals[type2].forEach(animal2 => {
+                        // 避免自己与自己比较
+                        if (animal1 !== animal2) {
+                            const pushForce = window.MinecraftArtOfExplode.resolveOverlap(animal1, animal2, 0.15);
+                            
+                            // 应用推力
+                            animal1.position.x += pushForce.x;
+                            animal1.position.z += pushForce.z;
+                        }
+                    });
+                });
+            });
+        });
+    }
 }
 
 // 处理动物的物理更新(重力和碰撞)

@@ -15,7 +15,7 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
     // 升级配置
     const UPGRADE_CONFIG = {
         armsDealer: {
-            cost: 500,  // 每1%升级需要的奖金点数
+            cost: 200,  // 每1%升级需要的奖金点数
             maxLevel: 100 // 最大升级等级
         },
         nuclearBomb: {
@@ -23,15 +23,15 @@ export function initScoreSystem(config, document, tearDownMouseLock, mouseLockLi
             maxLevel: 20 // 最大升级等级
         },
         llamaMilk: {
-            cost: 1000,  // 每1%升级需要的奖金点数
+            cost: 800,  // 每1%升级需要的奖金点数
             maxLevel: 20 // 最大升级等级
         },
         pigFeed: {
             cost: 1000,  // 每1%升级需要的奖金点数
-            maxLevel: 20 // 最大升级等级
+            maxLevel: 50 // 最大升级等级
         },
         glasses: {
-            cost: 200,  // 每1%升级需要的奖金点数
+            cost: 400,  // 每1%升级需要的奖金点数
             maxLevel: 100 // 最大升级等级
         },
         acquirer: {

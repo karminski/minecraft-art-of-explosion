@@ -370,6 +370,33 @@ export function updateCamera(player, character, characterGroup, characterAnimati
     player.position.y += player.velocity.y;
     player.position.z += player.velocity.z;
 
+    // 解决与方块的重叠
+    if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.resolveBlockOverlap) {
+        const blockPush = window.MinecraftArtOfExplode.resolveBlockOverlap(player, world, worldSize, window.blockTypes);
+        if (blockPush.x !== 0 || blockPush.z !== 0) {
+            player.position.x += blockPush.x;
+            player.position.z += blockPush.z;
+        }
+    }
+    
+    // 解决与动物的重叠
+    if (animals && window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.resolveOverlap) {
+        // 检查与每个动物的重叠
+        Object.keys(animals).forEach(animalType => {
+            animals[animalType].forEach(animal => {
+                const pushForce = window.MinecraftArtOfExplode.resolveOverlap(player, animal, 0.3);
+                
+                // 对玩家应用推力
+                player.position.x += pushForce.x;
+                player.position.z += pushForce.z;
+                
+                // 对动物应用相反推力
+                animal.position.x -= pushForce.x;
+                animal.position.z -= pushForce.z;
+            });
+        });
+    }
+
     // 更新角色组位置
     characterGroup.position.copy(player.position);
 

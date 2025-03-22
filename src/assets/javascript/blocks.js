@@ -950,6 +950,93 @@ function playTNTExplodeSound() {
     });
 }
 
+function resolveOverlap(object1, object2, pushStrength = 0.2) {
+    // 计算两个对象之间的方向向量
+    const dirX = object1.position.x - object2.position.x;
+    const dirZ = object1.position.z - object2.position.z;
+    
+    // 计算距离
+    const distance = Math.sqrt(dirX * dirX + dirZ * dirZ);
+    
+    // 如果距离太小，表示有重叠
+    if (distance < 1.0) {
+        // 归一化方向
+        let normalizedDirX = dirX;
+        let normalizedDirZ = dirZ;
+        
+        // 避免除以零
+        if (distance > 0.001) {
+            normalizedDirX = dirX / distance;
+            normalizedDirZ = dirZ / distance;
+        } else {
+            // 如果距离极小，使用随机方向
+            const randomAngle = Math.random() * Math.PI * 2;
+            normalizedDirX = Math.cos(randomAngle);
+            normalizedDirZ = Math.sin(randomAngle);
+        }
+        
+        // 计算需要推开的距离
+        const pushDistance = (1.0 - distance) * pushStrength;
+        
+        // 返回推力向量
+        return {
+            x: normalizedDirX * pushDistance,
+            z: normalizedDirZ * pushDistance
+        };
+    }
+    
+    // 无重叠，无需推力
+    return { x: 0, z: 0 };
+}
+
+// 检测并解决对象与方块重叠
+function resolveBlockOverlap(object, world, worldSize, blockTypes) {
+    // 获取对象当前位置
+    const objX = Math.floor(object.position.x);
+    const objY = Math.floor(object.position.y);
+    const objZ = Math.floor(object.position.z);
+    
+    // 检查对象是否在方块内部
+    if (objX >= 0 && objX < worldSize && 
+        objY >= 0 && objY < worldSize && 
+        objZ >= 0 && objZ < worldSize) {
+        
+        // 检查对象所在位置是否有方块
+        const blockType = world[objX][objY][objZ];
+        if (blockType !== 0 && blockType !== blockTypes.leaves && blockType !== blockTypes.tallgrass) {  // 不是空气/树叶/草
+            // 计算对象到方块中心的方向
+            const blockCenterX = objX + 0.5;
+            const blockCenterZ = objZ + 0.5;
+            
+            const dirX = object.position.x - blockCenterX;
+            const dirZ = object.position.z - blockCenterZ;
+            
+            // 计算到方块边缘最短的方向
+            let pushX = 0;
+            let pushZ = 0;
+            
+            // 确定X方向推力
+            if (Math.abs(dirX) < 0.5) {
+                pushX = dirX > 0 ? 0.5 - dirX : -0.5 - dirX;
+            }
+            
+            // 确定Z方向推力
+            if (Math.abs(dirZ) < 0.5) {
+                pushZ = dirZ > 0 ? 0.5 - dirZ : -0.5 - dirZ;
+            }
+            
+            // 选择最小推力方向
+            if (Math.abs(pushX) < Math.abs(pushZ)) {
+                return { x: pushX * 1.1, z: 0 };
+            } else {
+                return { x: 0, z: pushZ * 1.1 };
+            }
+        }
+    }
+    
+    // 无重叠，无需推力
+    return { x: 0, z: 0 };
+}
 
 // 导出所有模块
 export {
@@ -965,5 +1052,7 @@ export {
     startTNTTimer,
     explodeTNT,
     createFlameEffect,
-    updateFlameAnimation
+    updateFlameAnimation,
+    resolveOverlap,
+    resolveBlockOverlap
 };

@@ -31,7 +31,9 @@ import {
     startTNTTimer,
     explodeTNT,
     createFlameEffect,
-    updateFlameAnimation
+    updateFlameAnimation,
+    resolveOverlap,
+    resolveBlockOverlap
 } from './blocks.js';
 
 // 添加导入world.js中的函数
@@ -480,7 +482,9 @@ export function createMinefract() {
         skillSystem: skillSystem,
         checkSkillCardDrop: checkSkillCardDrop,
         createSkillCard3D: createSkillCard3D,
-        changeItemCount: changeItemCount
+        changeItemCount: changeItemCount,
+        resolveOverlap: resolveOverlap,
+        resolveBlockOverlap: resolveBlockOverlap
     }
 }
 
