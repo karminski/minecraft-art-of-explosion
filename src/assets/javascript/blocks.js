@@ -781,7 +781,7 @@ function explodeTNT(
             const delay = 50 + Math.random() * 40;
             setTimeout(() => {
                 console.log(`连锁引爆TNT: (${tntBlock.x}, ${tntBlock.y}, ${tntBlock.z})`);
-                explodeTNT(config, scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem);
+                explodeTNT(config, scene, tntBlock.x, tntBlock.y, tntBlock.z, world, blockReferences, worldSize, blockTypes, explosionTextures, materials, explosionDebris, animals, inventory, updateInventoryUI, character, textures, scoreSystem, checkSkillCardDrop, createSkillCard3D);
             }, delay);
         });
     }

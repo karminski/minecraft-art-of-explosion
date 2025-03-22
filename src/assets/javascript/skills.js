@@ -190,9 +190,10 @@ function activateSkill(index) {
         applyInvertFilter(true);
         
         // 暂停所有动物
-        //if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.animalSystem) {
-        //    window.MinecraftArtOfExplode.animalSystem.pauseAnimals(true);
-        //}
+        if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.animalSystem) {
+            window.MinecraftArtOfExplode.animalSystem.pauseAnimals(true);
+            console.log("时间停止：动物移动已暂停");
+        }
         
         // 暂停游戏计时器 - 确保调用正确
         if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.scoreSystem) {
@@ -235,6 +236,7 @@ function deactivateSkill(index) {
         // 恢复所有动物
         if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.animalSystem) {
             window.MinecraftArtOfExplode.animalSystem.pauseAnimals(false);
+            console.log("时间恢复：动物移动已恢复");
         }
         
         // 恢复游戏计时器 - 确保调用正确
@@ -312,6 +314,7 @@ function startCooldownTimer(index) {
             clearInterval(skillTimers[index]);
             skills.items[index].cooldown = 0;
             timerElement.style.opacity = '0'; // 隐藏计时器
+            updateSkillUI(index);
         }
     }, 1000);
 }

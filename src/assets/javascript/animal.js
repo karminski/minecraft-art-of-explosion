@@ -78,6 +78,9 @@ class AnimalBase {
     }
 }
 
+// 添加全局变量来追踪动物系统的暂停状态
+let animalsArePaused = false;
+
 // 更新所有动物的位置(模拟重力、碰撞和随机移动)
 function updateAnimals(animals, world, worldSize, deltaTime, player = null, blockTypes) {
     // 防止deltaTime过大或为NaN
@@ -86,7 +89,30 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null, bloc
         deltaTime = 16; // 使用16ms作为默认值
     }
     
-    // 遍历所有动物类型
+    // 如果动物系统被暂停，只更新物理但不更新移动
+    if (animalsArePaused) {
+        // 只更新物理效果（重力和碰撞）
+        Object.keys(animals).forEach(animalType => {
+            animals[animalType].forEach(animal => {
+                // 检查动物位置是否有效
+                if (isNaN(animal.position.x) || isNaN(animal.position.y) || isNaN(animal.position.z)) {
+                    console.error(`${animalType}位置包含NaN，重置到安全位置`);
+                    animal.position.set(
+                        isNaN(animal.position.x) ? Math.floor(worldSize/2) : animal.position.x,
+                        20, // 固定高度
+                        isNaN(animal.position.z) ? Math.floor(worldSize/2) : animal.position.z
+                    );
+                    animal.velocity.set(0, 0, 0);
+                }
+                
+                // 只应用物理更新（重力和碰撞）
+                updateAnimalPhysics(animal, world, worldSize, blockTypes);
+            });
+        });
+        return;
+    }
+    
+    // 正常更新所有动物
     Object.keys(animals).forEach(animalType => {
         animals[animalType].forEach(animal => {
             // 先检查动物位置是否有效
@@ -445,6 +471,7 @@ function initializeAnimals(config, scene, world, worldSize, textureLoader, block
         animals: { llamas: [], pigs: [] },
         initialCounts: { llamas: 0, pigs: 0 },
         initialized: false,
+        pauseAnimals: pauseAnimals,
         update: function(deltaTime, player) {
             console.log("动物系统正在加载中...");
         }
@@ -534,11 +561,18 @@ function replenishAnimals(scene, world, worldSize, textureLoader, animals, initi
     });
 }
 
+// 暂停/恢复动物移动的函数
+function pauseAnimals(pause) {
+    console.log(`动物系统 ${pause ? '暂停' : '恢复'} 移动`);
+    animalsArePaused = pause;
+}
+
 // 导出函数和类
 export {
     AnimalBase,
     initAnimalSystem,
     updateAnimals,
     moveAnimalRandomly,
-    replenishAnimals
+    replenishAnimals,
+    pauseAnimals
 };
