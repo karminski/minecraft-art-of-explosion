@@ -29,13 +29,13 @@ function getDefaultConfig() {
                     duration: 10, // in seconds
                 },
                 theMagnet: {
-                    duration: 5,
+                    duration: 10,
                 },
                 theNapalm: {
-                    duration: 5,
+                    duration: 10,
                 },
                 theInfinite: {
-                    duration: 5,
+                    duration: 10,
                 },
             }
         }

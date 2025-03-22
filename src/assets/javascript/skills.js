@@ -200,6 +200,12 @@ function activateSkill(index) {
             console.log("技能激活: 暂停计时器");
             window.MinecraftArtOfExplode.scoreSystem.pauseTimer(true, skills.items[index].name);
         }
+    } else if (skills.items[index].name === 'theMagnet') {
+        // 播放磁铁音效
+        playMagnetSound();
+        
+        // 启用磁力效果
+        applyMagnetEffect(true);
     }
 }
 
@@ -242,8 +248,11 @@ function deactivateSkill(index) {
         // 恢复游戏计时器 - 确保调用正确
         if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.scoreSystem) {
             console.log("技能结束: 恢复计时器");
-            window.MinecraftArtOfExplode.scoreSystem.pauseTimer(false);
+            window.MinecraftArtOfExplode.scoreSystem.pauseTimer(false, skills.items[index].name);
         }
+    } else if (skills.items[index].name === 'theMagnet') {
+        // 禁用磁力效果
+        applyMagnetEffect(false);
     }
 }
 
@@ -655,6 +664,26 @@ function applyInvertFilter(apply) {
     }
 }
 
+// 添加播放磁铁音效的函数
+function playMagnetSound() {
+    const audio = new Audio('assets/sounds/magnet.mp3');
+    audio.volume = 0.5; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放磁铁音效失败:', error);
+    });
+}
+
+// 添加应用磁力效果的函数
+function applyMagnetEffect(active) {
+    // 通过自定义事件通知系统启用/禁用磁力效果
+    const event = new CustomEvent('magnet-effect', { 
+        detail: { active: active } 
+    });
+    document.dispatchEvent(event);
+    
+    console.log(`磁力效果 ${active ? '启用' : '禁用'}`);
+}
+
 export {
     skills,
     initSkillSystem,
@@ -663,7 +692,9 @@ export {
     createSkillCard3D,
     pickupSkillCard,
     checkSkillCardDrop,
-    activateSkillByName,  // 导出新函数，以便其他模块可以使用
+    activateSkillByName,
     playTheWorldSound,
-    applyInvertFilter
+    applyInvertFilter,
+    playMagnetSound,
+    applyMagnetEffect
 };

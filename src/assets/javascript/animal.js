@@ -81,6 +81,15 @@ class AnimalBase {
 // 添加全局变量来追踪动物系统的暂停状态
 let animalsArePaused = false;
 
+// 添加全局变量来跟踪磁力效果状态
+let magnetEffectActive = false;
+
+// 添加监听事件，接收磁力效果的启用/禁用信号
+document.addEventListener('magnet-effect', (event) => {
+    magnetEffectActive = event.detail.active;
+    console.log(`动物系统接收到磁力效果状态变更: ${magnetEffectActive ? '启用' : '禁用'}`);
+});
+
 // 更新所有动物的位置(模拟重力、碰撞和随机移动)
 function updateAnimals(animals, world, worldSize, deltaTime, player = null, blockTypes) {
     // 防止deltaTime过大或为NaN
@@ -107,6 +116,11 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null, bloc
                 
                 // 只应用物理更新（重力和碰撞）
                 updateAnimalPhysics(animal, world, worldSize, blockTypes);
+
+                // 如果磁力效果激活，应用吸引力, 毕竟Dio被承太郎的磁铁吓到了
+                if (magnetEffectActive && !animal.isDebris) {
+                    applyMagnetAttraction(animal, world, worldSize, blockTypes);
+                }
             });
         });
         return;
@@ -135,6 +149,11 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null, bloc
             // 调用特定动物类型的动画更新
             if (animal.controller && typeof animal.controller.animateLegs === 'function') {
                 animal.controller.animateLegs(animal, deltaTime);
+            }
+            
+            // 如果磁力效果激活，应用吸引力
+            if (magnetEffectActive && !animal.isDebris) {
+                applyMagnetAttraction(animal, world, worldSize, blockTypes);
             }
         });
     });
@@ -567,6 +586,57 @@ function pauseAnimals(pause) {
     animalsArePaused = pause;
 }
 
+// 添加磁力吸引效果函数
+function applyMagnetAttraction(animal, world, worldSize, blockTypes) {
+    // 寻找所有激活的TNT方块
+    const tntBlocks = findActiveTNTBlocks();
+    
+    if (tntBlocks.length === 0) return; // 没有TNT方块时退出
+    
+    // 对于每个TNT方块，检查动物是否在吸引范围内
+    tntBlocks.forEach(tnt => {
+        // 计算动物到TNT的距离
+        const distance = Math.sqrt(
+            Math.pow(animal.position.x - (tnt.blockX + 0.5), 2) +
+            Math.pow(animal.position.z - (tnt.blockZ + 0.5), 2)
+        );
+        
+        // 如果在吸引范围内（8个方块）
+        if (distance <= 10) {
+            // 计算吸引力强度（距离越近，吸引力越强）
+            const attractionStrength = Math.max(0.05, 0.1 * (1 - distance / 5));
+            
+            // 计算指向TNT的方向向量
+            const directionX = (tnt.blockX + 0.5 - animal.position.x);
+            const directionZ = (tnt.blockZ + 0.5 - animal.position.z);
+            
+            // 归一化方向向量
+            const length = Math.sqrt(directionX * directionX + directionZ * directionZ);
+            const normalizedDirX = directionX / length;
+            const normalizedDirZ = directionZ / length;
+            
+            // 应用吸引力（直接修改位置，而不是速度，这样效果更明显）
+            animal.position.x += normalizedDirX * attractionStrength;
+            animal.position.z += normalizedDirZ * attractionStrength;
+            
+            // 如果需要可视效果，可以添加粒子效果等
+        }
+    });
+}
+
+// 查找场景中所有激活的TNT方块
+function findActiveTNTBlocks() {
+    // 如果全局有blockReferences可用，则使用它
+    if (window.MinecraftArtOfExplode && window.MinecraftArtOfExplode.blockReferences) {
+        return window.MinecraftArtOfExplode.blockReferences.filter(block => 
+            block && block.type === 6 // TNT的blockType是6
+        );
+    }
+    
+    // 如果没有全局引用，返回空数组
+    return [];
+}
+
 // 导出函数和类
 export {
     AnimalBase,
@@ -574,5 +644,7 @@ export {
     updateAnimals,
     moveAnimalRandomly,
     replenishAnimals,
-    pauseAnimals
+    pauseAnimals,
+    applyMagnetAttraction,
+    findActiveTNTBlocks
 };
