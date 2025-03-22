@@ -890,7 +890,7 @@ function explodeTNT(
         // 保存所有被爆炸波及的方块位置
         const affectedBlocks = [];
         
-        // 为每个爆炸影响的 x,z 坐标找到最高的被移除方块，在其上方创建火焰
+        // 为每个爆炸影响的 x,z 坐标找到最高的非空气方块，在其上方创建火焰
         const flameMap = new Map(); // 使用Map防止重复创建火焰
         
         for (let bx = Math.max(0, Math.floor(x - explosionRadius)); bx <= Math.min(worldSize - 1, Math.floor(x + explosionRadius)); bx++) {
@@ -911,12 +911,13 @@ function explodeTNT(
                     }
                     
                     if (highestY !== -1) {
-                        // 在找到的最高方块上方创建火焰
+                        // 创建火焰在找到的最高方块上方(而不是下方)
                         const flameKey = `${bx},${bz}`;
                         
                         // 避免在同一x,z坐标创建多个火焰
                         if (!flameMap.has(flameKey)) {
-                            createFlameEffect(scene, bx, highestY, bz);
+                            // 确保火焰创建在方块上方 (Y+1)
+                            createFlameEffect(scene, bx, highestY + 1, bz);
                             flameMap.set(flameKey, true);
                         }
                     }
