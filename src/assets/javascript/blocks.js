@@ -533,6 +533,102 @@ function startTNTTimer(block, scene, blockReferences) {
     };
 }
 
+// 创建火焰效果
+function createFlameEffect(scene, x, y, z) {
+    // 加载火焰精灵图纹理
+    const flameTexture = new THREE.TextureLoader().load('assets/images/flame.png');
+    
+    // 设置精灵图的分割参数 (2行5列)
+    const columns = 5;
+    const rows = 2;
+    const frameWidth = 1 / columns;
+    const frameHeight = 1 / rows;
+    
+    // 创建材质
+    const flameMaterial = new THREE.SpriteMaterial({
+        map: flameTexture,
+        transparent: true,
+        alphaTest: 0.5,
+        color: 0xffffff
+    });
+    
+    // 创建精灵
+    const flameSprite = new THREE.Sprite(flameMaterial);
+    
+    // 设置精灵大小和位置
+    flameSprite.scale.set(1.5, 1.5, 1);
+    flameSprite.position.set(x + 0.5, y + 0.5, z + 0.5);
+    
+    // 标记为火焰
+    flameSprite.isFlame = true;
+    flameSprite.createdAt = Date.now();
+    flameSprite.lifeTime = 15000; // 火焰持续15秒
+    
+    // 添加动画信息
+    flameSprite.animation = {
+        currentFrame: 0,
+        totalFrames: columns * rows,
+        columns: columns,
+        rows: rows,
+        frameWidth: frameWidth,
+        frameHeight: frameHeight,
+        lastFrameUpdate: Date.now(),
+        frameUpdateInterval: 150 // 每150毫秒更新一次帧
+    };
+    
+    // 添加到场景
+    scene.add(flameSprite);
+    
+    // 将火焰加入全局火焰数组，便于后续管理
+    if (!window.activeFlames) {
+        window.activeFlames = [];
+    }
+    window.activeFlames.push(flameSprite);
+    
+    return flameSprite;
+}
+
+// 更新火焰帧动画
+function updateFlameAnimation(flame) {
+    const now = Date.now();
+    
+    // 判断是否需要更新帧
+    if (now - flame.animation.lastFrameUpdate > flame.animation.frameUpdateInterval) {
+        // 更新当前帧
+        flame.animation.currentFrame = (flame.animation.currentFrame + 1) % flame.animation.totalFrames;
+        
+        // 计算当前帧在精灵图中的位置
+        const column = flame.animation.currentFrame % flame.animation.columns;
+        const row = Math.floor(flame.animation.currentFrame / flame.animation.columns);
+        
+        // 更新UV坐标以显示当前帧
+        flame.material.map.offset.x = column * flame.animation.frameWidth;
+        flame.material.map.offset.y = row * flame.animation.frameHeight;
+        flame.material.map.repeat.set(flame.animation.frameWidth, flame.animation.frameHeight);
+        
+        // 更新最后帧更新时间
+        flame.animation.lastFrameUpdate = now;
+    }
+    
+    // 检查火焰是否应该消失
+    if (now - flame.createdAt > flame.lifeTime) {
+        // 从场景中移除
+        flame.parent.remove(flame);
+        
+        // 从全局火焰数组中移除
+        const index = window.activeFlames.indexOf(flame);
+        if (index > -1) {
+            window.activeFlames.splice(index, 1);
+        }
+        
+        // 释放资源
+        flame.material.dispose();
+        if (flame.material.map) {
+            flame.material.map.dispose();
+        }
+    }
+}
+
 // TNT爆炸效果，添加计分系统参数
 function explodeTNT(
     config, 
@@ -789,6 +885,45 @@ function explodeTNT(
         });
     }
 
+    // 如果 Napalm 技能被激活，在爆炸地面创建火焰
+    if (window.napalmEffectActive) {
+        // 保存所有被爆炸波及的方块位置
+        const affectedBlocks = [];
+        
+        // 为每个爆炸影响的 x,z 坐标找到最高的被移除方块，在其上方创建火焰
+        const flameMap = new Map(); // 使用Map防止重复创建火焰
+        
+        for (let bx = Math.max(0, Math.floor(x - explosionRadius)); bx <= Math.min(worldSize - 1, Math.floor(x + explosionRadius)); bx++) {
+            for (let bz = Math.max(0, Math.floor(z - explosionRadius)); bz <= Math.min(worldSize - 1, Math.floor(z + explosionRadius)); bz++) {
+                // 计算与爆炸中心的水平距离
+                const horizontalDistance = Math.sqrt((bx - x) * (bx - x) + (bz - z) * (bz - z));
+                
+                // 如果在爆炸半径内
+                if (horizontalDistance <= explosionRadius) {
+                    // 找到这个x,z坐标上最高的非空气方块
+                    let highestY = -1;
+                    
+                    for (let by = worldSize - 1; by >= 0; by--) {
+                        if (world[bx][by][bz] !== blockTypes.air) {
+                            highestY = by;
+                            break;
+                        }
+                    }
+                    
+                    if (highestY !== -1) {
+                        // 在找到的最高方块上方创建火焰
+                        const flameKey = `${bx},${bz}`;
+                        
+                        // 避免在同一x,z坐标创建多个火焰
+                        if (!flameMap.has(flameKey)) {
+                            createFlameEffect(scene, bx, highestY, bz);
+                            flameMap.set(flameKey, true);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // 导出所有模块
@@ -803,5 +938,7 @@ export {
     createBlockDebris,
     createAnimalDebris,
     startTNTTimer,
-    explodeTNT
+    explodeTNT,
+    createFlameEffect,
+    updateFlameAnimation
 };

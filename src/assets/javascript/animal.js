@@ -157,6 +157,35 @@ function updateAnimals(animals, world, worldSize, deltaTime, player = null, bloc
             }
         });
     });
+    
+    // 检查动物是否接触到火焰
+    if (window.activeFlames && window.activeFlames.length > 0) {
+        Object.keys(animals).forEach(animalType => {
+            animals[animalType].forEach(animal => {
+                // 检查动物与每个火焰的距离
+                window.activeFlames.forEach(flame => {
+                    const dx = animal.position.x - flame.position.x;
+                    const dy = animal.position.y - flame.position.y;
+                    const dz = animal.position.z - flame.position.z;
+                    const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    
+                    // 如果动物接触到火焰
+                    if (distance < 1.0) {
+                        // 触发动物被火焰消灭的事件
+                        const event = new CustomEvent('animal-burned', { 
+                            detail: { 
+                                animal: animal,
+                                animalType: animalType,
+                                position: animal.position.clone(),
+                                flamePosition: flame.position.clone()
+                            } 
+                        });
+                        document.dispatchEvent(event);
+                    }
+                });
+            });
+        });
+    }
 }
 
 // 处理动物的物理更新(重力和碰撞)

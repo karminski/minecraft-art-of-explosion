@@ -27,8 +27,11 @@ import {
     placeBlock,
     createExplosionAnimation,
     createBlockDebris,
+    createAnimalDebris,
     startTNTTimer,
-    explodeTNT
+    explodeTNT,
+    createFlameEffect,
+    updateFlameAnimation
 } from './blocks.js';
 
 // 添加导入world.js中的函数
@@ -433,6 +436,13 @@ export function createMinefract() {
             }
         });
 
+        // 更新火焰动画
+        if (window.activeFlames && window.activeFlames.length > 0) {
+            window.activeFlames.forEach(flame => {
+                updateFlameAnimation(flame);
+            });
+        }
+
         // 使用当前活动摄像机进行渲染
         renderer.render(scene, activeCamera);
     }
@@ -533,4 +543,51 @@ window.handleTNTExplosion = function(x, y, z) {
         window.MinecraftArtOfExplode.createSkillCard3D
     );
 };
+
+// 添加动物被火焰消灭的事件监听
+document.addEventListener('animal-burned', (event) => {
+    const { animal, animalType, position, flamePosition } = event.detail;
+    
+    // 从场景中移除动物
+    if (window.MinecraftArtOfExplode.scene && animal.parent) {
+        // 创建动物碎片效果
+        if (window.MinecraftArtOfExplode.explosionDebris) {
+            createAnimalDebris(
+                window.MinecraftArtOfExplode.scene, 
+                animal, 
+                flamePosition, 
+                window.MinecraftArtOfExplode.explosionDebris
+            );
+        }
+        
+        // 从场景中移除动物
+        animal.parent.remove(animal);
+        
+        // 从动物列表中移除
+        const animalList = window.MinecraftArtOfExplode.animalSystem.animals[animalType];
+        const index = animalList.indexOf(animal);
+        if (index > -1) {
+            animalList.splice(index, 1);
+        }
+        
+        // 更新得分
+        if (window.MinecraftArtOfExplode.scoreSystem) {
+            window.MinecraftArtOfExplode.scoreSystem.updateScore(1); // 按动物计算
+        }
+        
+        // 增加TNT数量
+        if (window.MinecraftArtOfExplode.inventory && window.MinecraftArtOfExplode.updateInventoryUI) {
+            // 如果有道具库，则增加TNT数量
+            if (window.MinecraftArtOfExplode.inventory && window.MinecraftArtOfExplode.inventory.items) {
+                // TNT通常在索引1的位置
+                window.MinecraftArtOfExplode.inventory.items[1].count += 1;
+
+                // 如果提供了更新UI的函数，则更新UI显示
+                if (typeof window.MinecraftArtOfExplode.updateInventoryUI === 'function' && window.MinecraftArtOfExplode.character) {
+                    window.MinecraftArtOfExplode.updateInventoryUI(window.MinecraftArtOfExplode.character, window.MinecraftArtOfExplode.blockTypes, window.MinecraftArtOfExplode.textures, window.MinecraftArtOfExplode.materials);
+                }
+            }
+        }
+    }
+});
 

@@ -212,6 +212,12 @@ function activateSkill(index) {
         
         // 启用无限物品效果
         applyInfiniteItemEffect(true);
+    } else if (skills.items[index].name === 'theNapalm') {
+        // 播放 Napalm 音效
+        playNapalmSound();
+        
+        // 启用 Napalm 效果
+        applyNapalmEffect(true);
     }
 }
 
@@ -262,6 +268,9 @@ function deactivateSkill(index) {
     } else if (skills.items[index].name === 'theInfinite') {
         // 禁用无限物品效果
         applyInfiniteItemEffect(false);
+    } else if (skills.items[index].name === 'theNapalm') {
+        // 禁用 Napalm 效果
+        applyNapalmEffect(false);
     }
 }
 
@@ -752,6 +761,67 @@ function applyInfiniteItemEffect(active) {
     }
 }
 
+// 播放 Napalm 技能音效
+function playNapalmSound() {
+    const audio = new Audio('assets/sounds/napalm.mp3');
+    audio.volume = 0.5; // 设置合适的音量
+    audio.play().catch(error => {
+        console.error('播放 Napalm 音效失败:', error);
+    });
+}
+
+// 应用 Napalm 效果
+function applyNapalmEffect(active) {
+    // 设置全局变量以告知爆炸系统是否应创建火焰
+    window.napalmEffectActive = active;
+    
+    // 通过自定义事件通知系统启用/禁用 Napalm 效果
+    const event = new CustomEvent('napalm-effect', { 
+        detail: { active: active } 
+    });
+    document.dispatchEvent(event);
+    
+    console.log(`火焰效果 ${active ? '启用' : '禁用'}`);
+    
+    // 添加视觉效果
+    if (active) {
+        let napalmOverlay = document.getElementById('napalm-overlay');
+        if (!napalmOverlay) {
+            napalmOverlay = document.createElement('div');
+            napalmOverlay.id = 'napalm-overlay';
+            napalmOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle, rgba(255,69,0,0.2) 0%, rgba(0,0,0,0) 70%);
+                pointer-events: none;
+                z-index: 999;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+            `;
+            document.body.appendChild(napalmOverlay);
+            
+            // 渐显效果
+            setTimeout(() => {
+                napalmOverlay.style.opacity = '1';
+            }, 50);
+        }
+    } else {
+        // 移除视觉效果
+        const napalmOverlay = document.getElementById('napalm-overlay');
+        if (napalmOverlay) {
+            napalmOverlay.style.opacity = '0';
+            setTimeout(() => {
+                if (napalmOverlay.parentNode) {
+                    napalmOverlay.parentNode.removeChild(napalmOverlay);
+                }
+            }, 500);
+        }
+    }
+}
+
 export {
     skills,
     initSkillSystem,
@@ -766,5 +836,7 @@ export {
     playMagnetSound,
     applyMagnetEffect,
     playInfiniteSound,
-    applyInfiniteItemEffect
+    applyInfiniteItemEffect,
+    playNapalmSound,
+    applyNapalmEffect
 };
