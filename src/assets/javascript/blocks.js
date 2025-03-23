@@ -1003,7 +1003,7 @@ function resolveBlockOverlap(object, world, worldSize, blockTypes) {
         
         // 检查对象所在位置是否有方块
         const blockType = world[objX][objY][objZ];
-        if (blockType !== 0 && blockType !== blockTypes.leaves && blockType !== blockTypes.tallgrass) {  // 不是空气/树叶/草
+        if (blockType !== 0) {  // 不是空气
             // 计算对象到方块中心的方向
             const blockCenterX = objX + 0.5;
             const blockCenterZ = objZ + 0.5;

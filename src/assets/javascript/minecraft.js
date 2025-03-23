@@ -491,8 +491,8 @@ export function createMinefract() {
 // 将开始游戏方法暴露给全局
 window.createMinefract = createMinefract;
 
-// 创建游戏实例
-window.MinecraftArtOfExplode = createMinefract();
+// 创建游戏实例, 在点击开始游戏按钮时创建, 所以这里先注释
+// window.MinecraftArtOfExplode = createMinefract();
 
 // TNT爆炸事件监听器 - 修改为包含计分系统更新
 document.addEventListener('tnt-explosion', (event) => {

@@ -91,10 +91,80 @@
             pointer-events: none;
             z-index: 100;
         }
+
+        /* 添加 Loading 界面的样式 */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #ufo-container {
+            margin-bottom: 30px;
+        }
+
+        #ufo-image {
+            width: 150px;
+            height: 150px;
+            animation: float 3s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        #game-intro {
+            max-width: 600px;
+            margin: 0 auto 40px auto;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            line-height: 1.6;
+            font-size: 18px;
+        }
+
+        #start-button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #start-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 
 <body>
+    <!-- Loading 界面 -->
+    <div id="loading-screen">
+        <div id="ufo-container">
+            <img id="ufo-image" src="assets/images/ufo.svg" alt="UFO">
+        </div>
+        <div id="game-intro">
+            公元2025年的某一天，天空中突然射下来了一束可疑的光线。你牧场中的动物开始疯狂繁殖。你不得不使用所有手段来阻止动物将你的农场挤爆。
+        </div>
+        <button id="start-button">开始游戏</button>
+    </div>
+
     <div id="info">
         控制说明:<br>
         WASD - 移动<br>
@@ -122,8 +192,30 @@
     <div id="inventory"></div>
     <canvas id="crosshair" width="20" height="20"></canvas>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.js"></script>
-    <script  type="module" src="assets/javascript/minecraft.js"></script>
+    <script src="assets/javascript/three.min.js"></script>
+    
+    <!-- 将模块脚本加载但不立即执行游戏初始化 -->
+    <script type="module">
+        import { createMinefract } from './assets/javascript/minecraft.js';
+        
+        // 将创建游戏函数暴露给全局作用域
+        window.createMinefract = createMinefract;
+        
+        // 获取开始游戏按钮
+        const startButton = document.getElementById('start-button');
+        const loadingScreen = document.getElementById('loading-screen');
+        
+        // 添加点击事件处理程序
+        startButton.addEventListener('click', function() {
+            // 隐藏加载界面
+            loadingScreen.style.display = 'none';
+            
+            // 初始化游戏
+            window.MinecraftArtOfExplode = createMinefract();
+            
+            console.log('游戏已开始初始化');
+        });
+    </script>
 </body>
 
 </html>
