@@ -9,6 +9,10 @@
 
 公元2025年的某一天，天空中突然射下来了一束可疑的光线。你牧场中的动物开始疯狂繁殖。你不得不使用所有手段来阻止动物将你的农场挤爆。
 
+## 在线游玩
+
+[https://minecraft-art-of-explosion.kcores.com](https://minecraft-art-of-explosion.kcores.com)
+
 ## 本地启动游戏
 
 ```
